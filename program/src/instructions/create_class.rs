@@ -12,7 +12,7 @@ use pinocchio::{
     sysvars::{rent::Rent, Sysvar},
     ProgramResult,
 };
-use pinocchio_system::instructions::CreateAccount;
+use pinocchio_system::instructions::{Allocate, Assign, CreateAccount, Transfer};
 
 use crate::{
     state::Class,
@@ -158,14 +158,37 @@ impl<'info> CreateClass<'info> {
         let signers = [Signer::from(&seeds)];
 
         // Create the account with our program as owner
-        CreateAccount {
-            from: self.accounts.payer,
-            to: self.accounts.class,
-            lamports,
-            space: space as u64,
-            owner: &crate::ID,
-        }
-        .invoke_signed(&signers)?;
+        if self.accounts.class.lamports() > 0 {
+            Allocate {
+                account: self.accounts.class,
+                space: space as u64,
+            }
+            .invoke_signed(&signers)?;
+
+            Assign {
+                account: self.accounts.class,
+                owner: &crate::ID,
+            }
+            .invoke_signed(&signers)?;
+
+            if self.accounts.class.lamports() < lamports {
+                Transfer {
+                    from: self.accounts.class,
+                    to: self.accounts.payer,
+                    lamports: lamports - self.accounts.class.lamports(),
+                }
+                .invoke_signed(&signers)?;
+            }
+        } else {
+            CreateAccount {
+                from: self.accounts.payer,
+                to: self.accounts.class,
+                lamports,
+                space: space as u64,
+                owner: &crate::ID,
+            }
+            .invoke_signed(&signers)?;
+        }        
 
         let class = Class {
             authority: *self.accounts.authority.key(),

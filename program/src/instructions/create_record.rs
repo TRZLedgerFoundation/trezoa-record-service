@@ -12,7 +12,7 @@ use pinocchio::{
     sysvars::{rent::Rent, Sysvar},
     ProgramResult,
 };
-use pinocchio_system::instructions::CreateAccount;
+use pinocchio_system::instructions::{Allocate, Assign, CreateAccount, Transfer};
 
 use crate::{
     state::{Class, OwnerType, Record},
@@ -145,14 +145,38 @@ impl<'info> CreateRecord<'info> {
 
         let signers = [Signer::from(&seeds)];
 
-        CreateAccount {
-            from: self.accounts.payer,
-            to: self.accounts.record,
-            lamports,
-            space: space as u64,
-            owner: &crate::ID,
-        }
-        .invoke_signed(&signers)?;
+        // Create the account with our program as owner
+        if self.accounts.record.lamports() > 0 {
+            Allocate {
+                account: self.accounts.record,
+                space: space as u64,
+            }
+            .invoke_signed(&signers)?;
+
+            Assign {
+                account: self.accounts.record,
+                owner: &crate::ID,
+            }
+            .invoke_signed(&signers)?;
+
+            if self.accounts.record.lamports() < lamports {
+                Transfer {
+                    from: self.accounts.record,
+                    to: self.accounts.payer,
+                    lamports: lamports - self.accounts.record.lamports(),
+                }
+                .invoke_signed(&signers)?;
+            }
+        } else {
+            CreateAccount {
+                from: self.accounts.payer,
+                to: self.accounts.record,
+                lamports,
+                space: space as u64,
+                owner: &crate::ID,
+            }
+            .invoke_signed(&signers)?;
+        }    
 
         let record = Record {
             class: *self.accounts.class.key(),

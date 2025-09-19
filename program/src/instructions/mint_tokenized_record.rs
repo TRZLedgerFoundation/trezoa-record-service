@@ -24,7 +24,7 @@ use pinocchio::{
     sysvars::{rent::Rent, Sysvar},
     ProgramResult,
 };
-use pinocchio_system::instructions::CreateAccount;
+use pinocchio_system::instructions::{Allocate, Assign, CreateAccount, Transfer};
 
 /// MintRecordToken instruction.
 ///
@@ -227,14 +227,39 @@ impl<'info> MintTokenizedRecord<'info> {
         let signers = [Signer::from(&seeds)];
 
         // Create the account with our program as owner
-        CreateAccount {
-            from: self.accounts.payer,
-            to: self.accounts.group,
-            lamports,
-            space: space as u64,
-            owner: &TOKEN_2022_PROGRAM_ID,
+        if self.accounts.group.lamports() > 0 {
+            Allocate {
+                account: self.accounts.group,
+                space: space as u64,
+            }
+            .invoke_signed(&signers)?;
+
+            Assign {
+                account: self.accounts.group,
+                owner: &TOKEN_2022_PROGRAM_ID,
+            }
+            .invoke_signed(&signers)?;
+
+            if self.accounts.group.lamports() < lamports {
+                Transfer {
+                    from: self.accounts.group,
+                    to: self.accounts.payer,
+                    lamports: lamports - self.accounts.group.lamports(),
+                }
+                .invoke_signed(&signers)?;
+            }
+        } else {
+            CreateAccount {
+                from: self.accounts.payer,
+                to: self.accounts.group,
+                lamports,
+                space: space as u64,
+                owner: &TOKEN_2022_PROGRAM_ID,
+            }
+            .invoke_signed(&signers)?;
         }
-        .invoke_signed(&signers)
+
+        Ok(())
     }
 
     fn initialize_group_pointer(&self) -> Result<(), ProgramError> {
@@ -304,15 +329,39 @@ impl<'info> MintTokenizedRecord<'info> {
 
         let signers = [Signer::from(&seeds)];
 
-        // Create the account with our program as owner
-        CreateAccount {
-            from: self.accounts.payer,
-            to: self.accounts.mint,
-            lamports,
-            space: space as u64,
-            owner: &TOKEN_2022_PROGRAM_ID,
+        if self.accounts.mint.lamports() > 0 {
+            Allocate {
+                account: self.accounts.mint,
+                space: space as u64,
+            }
+            .invoke_signed(&signers)?;
+
+            Assign {
+                account: self.accounts.mint,
+                owner: &TOKEN_2022_PROGRAM_ID,
+            }
+            .invoke_signed(&signers)?;
+
+            if self.accounts.mint.lamports() < lamports {
+                Transfer {
+                    from: self.accounts.mint,
+                    to: self.accounts.payer,
+                    lamports: lamports - self.accounts.mint.lamports(),
+                }
+                .invoke_signed(&signers)?;
+            }
+        } else {
+            CreateAccount {
+                from: self.accounts.payer,
+                to: self.accounts.mint,
+                lamports,
+                space: space as u64,
+                owner: &TOKEN_2022_PROGRAM_ID,
+            }
+            .invoke_signed(&signers)?;
         }
-        .invoke_signed(&signers)
+
+        Ok(())
     }
 
     fn initialize_permanent_delegate(&self) -> Result<(), ProgramError> {
