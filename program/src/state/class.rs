@@ -134,14 +134,9 @@ impl<'info> Class<'info> {
     /// This function does not perform owner checks
     pub unsafe fn update_is_frozen_unchecked(
         class: &'info AccountInfo,
-        authority: &'info AccountInfo,
         is_frozen: bool,
     ) -> Result<(), ProgramError> {
         let mut data = class.try_borrow_mut_data()?;
-
-        unsafe {
-            Self::check_authority_unchecked(&data, authority)?;
-        }
 
         if data[IS_FROZEN_OFFSET] == is_frozen as u8 {
             return Ok(());
@@ -151,6 +146,21 @@ impl<'info> Class<'info> {
 
         Ok(())
     }
+
+    /// # Safety
+    ///
+    /// This function does not perform owner checks
+    pub unsafe fn update_authority_unchecked(
+        class: &'info AccountInfo,
+        authority: Pubkey,
+    ) -> Result<(), ProgramError> {
+        let mut data = class.try_borrow_mut_data()?;
+
+        data[AUTHORITY_OFFSET..AUTHORITY_OFFSET + size_of::<Pubkey>()].clone_from_slice(&authority);
+
+        Ok(())
+    }
+
 
     /// # Safety
     ///

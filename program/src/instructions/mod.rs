@@ -3,6 +3,7 @@ pub use create_class::CreateClass;
 
 pub mod update_class;
 pub use update_class::UpdateClassMetadata;
+pub use update_class::UpdateClassAuthority;
 
 pub mod freeze_class;
 pub use freeze_class::FreezeClass;

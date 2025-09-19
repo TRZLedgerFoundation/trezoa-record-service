@@ -1,6 +1,7 @@
 use crate::constants::MAX_METADATA_LEN;
 use crate::state::Class;
 use crate::utils::{ByteReader, Context};
+use pinocchio::pubkey::Pubkey;
 use pinocchio::{account_info::AccountInfo, program_error::ProgramError, ProgramResult};
 
 /// UpdateClass instruction.
@@ -77,6 +78,48 @@ impl<'info> UpdateClassMetadata<'info> {
                 self.accounts.class,
                 self.accounts.payer,
                 self.metadata,
+            )
+        }
+    }
+}
+
+// UpdateClassAuthority
+pub struct UpdateClassAuthority<'info> {
+    accounts: UpdateClassAccounts<'info>,
+    authority: Pubkey,
+}
+
+impl<'info> TryFrom<Context<'info>> for UpdateClassAuthority<'info> {
+    type Error = ProgramError;
+
+    fn try_from(ctx: Context<'info>) -> Result<Self, Self::Error> {
+        let accounts = UpdateClassAccounts::try_from(ctx.accounts)?;
+
+        // Check minimum instruction data length
+        #[cfg(not(feature = "perf"))]
+        if ctx.data.len() < size_of::<Pubkey>() {
+            return Err(ProgramError::InvalidArgument);
+        }
+
+        // Deserialize authority
+        let authority = ctx.data[0..size_of::<Pubkey>()].try_into().map_err(|_| ProgramError::InvalidInstructionData)?;
+
+        Ok(UpdateClassAuthority { accounts, authority })
+    }
+}
+
+impl<'info> UpdateClassAuthority<'info> {
+    pub fn process(ctx: Context<'info>) -> ProgramResult {
+        #[cfg(not(feature = "perf"))]
+        sol_log("Update Class Authority");
+        Self::try_from(ctx)?.execute()
+    }
+
+    pub fn execute(&self) -> ProgramResult {
+        unsafe {
+            Class::update_authority_unchecked(
+                self.accounts.class,
+                self.authority,
             )
         }
     }
