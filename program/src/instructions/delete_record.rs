@@ -1,4 +1,4 @@
-use crate::{constants::ONE_LAMPORT_RENT, state::Record, utils::Context};
+use crate::{state::Record, utils::Context};
 #[cfg(not(feature = "perf"))]
 use pinocchio::{log::sol_log, sysvars::{Sysvar, rent::Rent}};
 use pinocchio::{account_info::AccountInfo, program_error::ProgramError, ProgramResult};
@@ -17,6 +17,7 @@ use pinocchio::{account_info::AccountInfo, program_error::ProgramError, ProgramR
 /// 2. `payer` - The account that will pay for the record account
 /// 3. `record` - The record account to be deleted
 /// 4. `class` - [optional] The class of the record to be deleted
+/// 5. `mint` - [optional] The mint of the record to be deleted
 ///
 /// # Security
 /// 1. The authority must be either:
@@ -37,7 +38,7 @@ impl<'info> TryFrom<&'info [AccountInfo]> for DeleteRecordAccounts<'info> {
         };
 
         // Check if authority is the record owner or has a delegate
-        Record::check_owner_or_delegate(record, rest.first(), _authority)?;
+        Record::check_owner_or_delegate_or_deleted(record, rest.first(), _authority, rest.last())?;
 
         Ok(Self {
             _authority,
@@ -73,16 +74,6 @@ impl<'info> DeleteRecord<'info> {
         // Safety: The account has already been validated
         unsafe {
             Record::delete_record_unchecked(self.accounts.record, self.accounts.payer)?;
-
-            #[cfg(not(feature = "perf"))]
-            {
-                *self.accounts.record.borrow_mut_lamports_unchecked() = Rent::get()?.minimum_balance(1);
-            }
-
-            #[cfg(feature = "perf")]
-            {
-                *self.accounts.record.borrow_mut_lamports_unchecked() = ONE_LAMPORT_RENT;
-            }
         }
 
         Ok(())

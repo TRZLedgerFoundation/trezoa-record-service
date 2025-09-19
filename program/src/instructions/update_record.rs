@@ -50,7 +50,6 @@ impl<'info> TryFrom<&'info [AccountInfo]> for UpdateRecordAccounts<'info> {
             return Err(ProgramError::InvalidAccountData);
         }
 
-
         Ok(Self { payer, record })
     }
 }

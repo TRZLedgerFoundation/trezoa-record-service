@@ -140,6 +140,60 @@ impl<'info> Record<'info> {
     }
 
     #[inline(always)]
+    pub fn check_owner_or_delegate_or_deleted(
+        record: &AccountInfo,
+        class: Option<&AccountInfo>,
+        authority: &AccountInfo,
+        mint: Option<&AccountInfo>
+    ) -> Result<(), ProgramError> {
+        // Check the program id and the discriminator
+        Self::check_program_id_and_discriminator(record)?;
+
+        let data = record.try_borrow_data()?;
+
+        // Check if the Mint has been burned without passing through the BurnTokenizedRecord instruction
+        if data[OWNER_TYPE_OFFSET] == 2 {
+            let mint = mint.ok_or(ProgramError::InvalidAccountData)?;
+
+            if mint.key().ne(&data[OWNER_OFFSET..OWNER_OFFSET + size_of::<Pubkey>()]) {
+                return Err(ProgramError::InvalidAccountData);
+            }
+
+            if mint.try_borrow_data()?.len() != 0 {
+                return Err(ProgramError::InvalidAccountData);
+            }
+
+            return Ok(());
+        }
+
+        // Check if the authority is signer
+        if !authority.is_signer() {
+            return Err(ProgramError::MissingRequiredSignature);
+        }
+
+        // Check if the authority is the owner
+        if authority
+            .key()
+            .eq(&data[OWNER_OFFSET..OWNER_OFFSET + size_of::<Pubkey>()])
+        {
+            return Ok(());
+        }
+
+        // Check if the owner type is pubkey
+        if data[OWNER_TYPE_OFFSET].ne(&(OwnerType::Pubkey as u8)) {
+            return Err(ProgramError::InvalidAccountData);
+        }
+
+        // Validate the delegate
+        let class = class.ok_or(ProgramError::InvalidAccountData)?;
+        if class.key().ne(&data[CLASS_OFFSET..CLASS_OFFSET + size_of::<Pubkey>()]) {
+            return Err(ProgramError::InvalidAccountData);
+        }
+
+        Self::validate_delegate(class, authority)
+    }
+
+    #[inline(always)]
     pub fn check_owner_or_delegate(
         record: &AccountInfo,
         class: Option<&AccountInfo>,
