@@ -29,6 +29,11 @@ pub fn resize_account(
     new_size: usize,
     zero_out: bool,
 ) -> ProgramResult {
+    // Check if the new size is bigger than 10MB
+    if new_size > 1024 * 10 {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
     // If the account is already the correct size, return early
     if new_size == target_account.data_len() {
         return Ok(());

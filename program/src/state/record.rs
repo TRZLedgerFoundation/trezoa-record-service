@@ -12,7 +12,7 @@ use pinocchio::{
 use super::{Class, IS_PERMISSIONED_OFFSET};
 
 /// Maximum size allowed for a record account
-pub const MAX_RECORD_SIZE: usize = 1024 * 1024; // 1MB
+pub const MAX_RECORD_SIZE: usize = 1024 * 10; // 1MB
 
 /// Offsets
 const DISCRIMINATOR_OFFSET: usize = 0;
