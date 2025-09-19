@@ -8,10 +8,7 @@ use crate::{
     state::{OwnerType, Record, CLASS_OFFSET, IS_FROZEN_OFFSET, OWNER_OFFSET},
     token2022::{
         constants::{
-            TOKEN_2022_CLOSE_MINT_AUTHORITY_LEN, TOKEN_2022_GROUP_LEN,
-            TOKEN_2022_GROUP_POINTER_LEN, TOKEN_2022_MEMBER_LEN, TOKEN_2022_MEMBER_POINTER_LEN,
-            TOKEN_2022_METADATA_POINTER_LEN, TOKEN_2022_MINT_BASE_LEN, TOKEN_2022_MINT_LEN,
-            TOKEN_2022_PERMANENT_DELEGATE_LEN, TOKEN_2022_PROGRAM_ID,
+            TOKEN_2022_CLOSE_MINT_AUTHORITY_LEN, TOKEN_2022_GROUP_LEN, TOKEN_2022_GROUP_POINTER_LEN, TOKEN_2022_MEMBER_LEN, TOKEN_2022_MEMBER_POINTER_LEN, TOKEN_2022_METADATA_LEN, TOKEN_2022_METADATA_POINTER_LEN, TOKEN_2022_MINT_BASE_LEN, TOKEN_2022_MINT_LEN, TOKEN_2022_PERMANENT_DELEGATE_LEN, TOKEN_2022_PROGRAM_ID
         }, FreezeAccount, InitializeGroup, InitializeGroupMemberPointer, InitializeGroupPointer, InitializeMember, InitializeMetadata, InitializeMetadataPointer, InitializeMint2, InitializeMintCloseAuthority, InitializePermanentDelegate, Mint, MintToChecked, Token, UpdateMetadata
     },
     utils::Context,
@@ -307,6 +304,7 @@ impl<'info> MintTokenizedRecord<'info> {
             + TOKEN_2022_PERMANENT_DELEGATE_LEN
             + TOKEN_2022_CLOSE_MINT_AUTHORITY_LEN
             + TOKEN_2022_METADATA_POINTER_LEN
+            + TOKEN_2022_METADATA_LEN
             + TOKEN_2022_MEMBER_POINTER_LEN
             + TOKEN_2022_MEMBER_LEN;
 
