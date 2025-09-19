@@ -1,5 +1,5 @@
 use crate::{
-    state::Class,
+    state::{Class, CLASS_OFFSET, OWNER_OFFSET},
     token2022::{FreezeAccount, ThawAccount, Token},
     utils::{ByteReader, Context},
 };
@@ -8,7 +8,7 @@ use pinocchio::{
     account_info::AccountInfo,
     instruction::{Seed, Signer},
     program_error::ProgramError,
-    pubkey::try_find_program_address,
+    pubkey::{try_find_program_address, Pubkey},
     ProgramResult,
 };
 
@@ -24,13 +24,11 @@ use pinocchio::{
 /// 2. `mint` - The mint account that that is linked to the record
 /// 3. `token_account` - The token account that is linked to the record
 /// 4. `record` - The record account to be frozen/unfrozen
-/// 5. `token_2022_program` - Required for freezing/unfreezing the token account
-/// 6. `class` - The class of the record to be frozen/unfrozen
+/// 5. `class` - The class of the record to be frozen/unfrozen
+/// 6. `token_2022_program` - Required for freezing/unfreezing the token account
 ///
 /// # Security
-/// 1. The authority must be either:
-///    a. The record owner, or
-///    b. A delegate with freeze authority
+/// The authority must be: the class authority
 pub struct FreezeTokenizedRecordAccounts<'info> {
     mint: &'info AccountInfo,
     token_account: &'info AccountInfo,
@@ -40,12 +38,23 @@ pub struct FreezeTokenizedRecordAccounts<'info> {
 impl<'info> TryFrom<&'info [AccountInfo]> for FreezeTokenizedRecordAccounts<'info> {
     type Error = ProgramError;
     fn try_from(accounts: &'info [AccountInfo]) -> Result<Self, Self::Error> {
-        let [owner, mint, token_account, record, _token_2022_program, class] = accounts else {
+        let [authority, mint, token_account, record, class, _token_2022_program] = accounts else {
             return Err(ProgramError::NotEnoughAccountKeys);
         };
 
-        // Check if owner is the record owner or has a delegate
-        Class::check_authority(class, owner)?;
+        // Check if authority is the class authority
+        Class::check_authority(class, authority)?;
+
+        let record_data = record.try_borrow_data()?;
+        // Check if the class is the correct class
+        if class.key().ne(&record_data[CLASS_OFFSET..CLASS_OFFSET + size_of::<Pubkey>()]) {
+            return Err(ProgramError::InvalidAccountData);
+        }
+
+        // Check if the token is linked to the record
+        if mint.key().ne(&record_data[OWNER_OFFSET..OWNER_OFFSET + size_of::<Pubkey>()]) {
+            return Err(ProgramError::InvalidAccountData);
+        }
 
         Ok(Self {
             mint,

@@ -1,9 +1,9 @@
 use crate::{
-    state::{Class, Record},
+    state::{Class, Record, CLASS_OFFSET},
     utils::{ByteReader, Context},
 };
 use core::mem::size_of;
-use pinocchio::{account_info::AccountInfo, program_error::ProgramError, ProgramResult};
+use pinocchio::{account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey, ProgramResult};
 
 /// FreezeRecord instruction.
 ///
@@ -18,9 +18,7 @@ use pinocchio::{account_info::AccountInfo, program_error::ProgramError, ProgramR
 /// 3. `class` - The class of the record to be frozen/unfrozen
 ///
 /// # Security
-/// 1. The authority must be either:
-///    a. The record owner, or
-///    b. if the class is permissioned, the authority can be the permissioned authority
+/// The authority must be the class authority
 pub struct FreezeRecordAccounts<'info> {
     record: &'info AccountInfo,
 }
@@ -32,8 +30,13 @@ impl<'info> TryFrom<&'info [AccountInfo]> for FreezeRecordAccounts<'info> {
             return Err(ProgramError::NotEnoughAccountKeys);
         };
 
-        // Check if authority is the record owner or has a delegate
+        // Check if authority is the class authority
         Class::check_authority(class, authority)?;
+
+        // Check if the class is the correct class
+        if class.key().ne(&record.try_borrow_data()?[CLASS_OFFSET..CLASS_OFFSET + size_of::<Pubkey>()]) {
+            return Err(ProgramError::InvalidAccountData);
+        }
 
         Ok(Self { record })
     }
