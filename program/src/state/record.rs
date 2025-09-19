@@ -417,7 +417,7 @@ impl<'info> Record<'info> {
             offset += size_of::<u32>() + value_len;
         }
 
-        Ok(offset)
+        Ok(offset - (SEED_LEN_OFFSET - size_of::<u8>() - data[SEED_LEN_OFFSET] as usize))
     }
 
     #[inline(always)]
@@ -429,11 +429,11 @@ impl<'info> Record<'info> {
     ) -> Result<(&'info [u8], Option<&'info [u8]>), ProgramError> {
         let mut offset = SEED_LEN_OFFSET + size_of::<u8>() + data[SEED_LEN_OFFSET] as usize;
 
-        // Read seed_len and skip name
-        let seed_len =
+        // Read name_len and skip name
+        let name_len =
             u32::from_le_bytes(data[offset..offset + size_of::<u32>()].try_into().unwrap())
                 as usize;
-        offset += size_of::<u32>() + seed_len;
+        offset += size_of::<u32>() + name_len;
 
         // Read ticker_len and skip ticker
         let ticker_len =

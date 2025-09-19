@@ -307,18 +307,18 @@ impl<'info> MintTokenizedRecord<'info> {
             + TOKEN_2022_PERMANENT_DELEGATE_LEN
             + TOKEN_2022_CLOSE_MINT_AUTHORITY_LEN
             + TOKEN_2022_METADATA_POINTER_LEN
-            + TOKEN_2022_MEMBER_POINTER_LEN;
+            + TOKEN_2022_MEMBER_POINTER_LEN
+            + TOKEN_2022_MEMBER_LEN;
+
 
         // To avoid resizing the mint, we calculate the correct lamports for our token AOT with:
         // 1. `space` - The sum of the above static extension lengths
         // 2. `metadata_data.len()` - The full length of the metadata data
-        // 3. `TOKEN_2022_MEMBER_LEN` - The length of the member extension
         let lamports = Rent::get()?.minimum_balance(
             space
                 + unsafe {
                     Record::get_metadata_len_unchecked(&self.accounts.record.try_borrow_data()?)?
                 }
-                + TOKEN_2022_MEMBER_LEN,
         );
 
         let seeds = [
