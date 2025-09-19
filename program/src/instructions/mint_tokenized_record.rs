@@ -5,18 +5,14 @@ use pinocchio::log::sol_log;
 use pinocchio_associated_token_account::instructions::Create;
 
 use crate::{
-    state::{OwnerType, Record, OWNER_OFFSET},
+    state::{OwnerType, Record, CLASS_OFFSET, IS_FROZEN_OFFSET, OWNER_OFFSET},
     token2022::{
         constants::{
             TOKEN_2022_CLOSE_MINT_AUTHORITY_LEN, TOKEN_2022_GROUP_LEN,
             TOKEN_2022_GROUP_POINTER_LEN, TOKEN_2022_MEMBER_LEN, TOKEN_2022_MEMBER_POINTER_LEN,
             TOKEN_2022_METADATA_POINTER_LEN, TOKEN_2022_MINT_BASE_LEN, TOKEN_2022_MINT_LEN,
             TOKEN_2022_PERMANENT_DELEGATE_LEN, TOKEN_2022_PROGRAM_ID,
-        },
-        InitializeGroup, InitializeGroupMemberPointer, InitializeGroupPointer, InitializeMember,
-        InitializeMetadata, InitializeMetadataPointer, InitializeMint2,
-        InitializeMintCloseAuthority, InitializePermanentDelegate, Mint, MintToChecked, Token,
-        UpdateMetadata,
+        }, FreezeAccount, InitializeGroup, InitializeGroupMemberPointer, InitializeGroupPointer, InitializeMember, InitializeMetadata, InitializeMetadataPointer, InitializeMint2, InitializeMintCloseAuthority, InitializePermanentDelegate, Mint, MintToChecked, Token, UpdateMetadata
     },
     utils::Context,
 };
@@ -84,6 +80,11 @@ impl<'info> TryFrom<&'info [AccountInfo]> for MintTokenizedRecordAccounts<'info>
 
         // Check if the owner of the record is the same as the owner of the token account
         if record_data[OWNER_OFFSET..OWNER_OFFSET + size_of::<Pubkey>()].ne(owner.key()) {
+            return Err(ProgramError::InvalidAccountData);
+        }
+
+        // Check that the class of the record is the same as the class passed in 
+        if record_data[CLASS_OFFSET..CLASS_OFFSET + size_of::<Pubkey>()].ne(class.key()) {
             return Err(ProgramError::InvalidAccountData);
         }
 
@@ -171,8 +172,21 @@ impl<'info> MintTokenizedRecord<'info> {
 
         let mut record_data = self.accounts.record.try_borrow_mut_data()?;
 
-        // 1. Update the record to be frozen since the check will be perfomed on the token account
-        unsafe { Record::update_is_frozen_unchecked(&mut record_data, true)? }
+        // 1. Check if the current record is frozen, if it is, we need to freeze the token as well
+        if record_data[IS_FROZEN_OFFSET] == 1 {
+            let seeds = [
+                Seed::from(b"mint"),
+                Seed::from(self.accounts.record.key()),
+                Seed::from(&mint_bump),
+            ];
+
+            FreezeAccount {
+                account: self.accounts.token_account,
+                mint: self.accounts.mint,
+                freeze_authority: self.accounts.mint,
+            }
+            .invoke_signed(&[Signer::from(&seeds)])?;
+        }
 
         // 2. Update the record_owner to be the mint
         record_data[OWNER_OFFSET..OWNER_OFFSET + size_of::<Pubkey>()]
@@ -242,10 +256,11 @@ impl<'info> MintTokenizedRecord<'info> {
         let signers = [Signer::from(&seeds)];
 
         InitializeGroup {
+            group: self.accounts.group,
             mint: self.accounts.group,
             mint_authority: self.accounts.group,
             update_authority: self.accounts.group.key(),
-            max_size: 100,
+            max_size: u64::MAX,
         }
         .invoke_signed(&signers)
     }
@@ -358,6 +373,7 @@ impl<'info> MintTokenizedRecord<'info> {
         let signers = [Signer::from(&seeds)];
 
         InitializeMetadata {
+            metadata: self.accounts.mint,
             mint: self.accounts.mint,
             update_authority: self.accounts.mint,
             mint_authority: self.accounts.mint,

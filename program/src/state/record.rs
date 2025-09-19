@@ -16,10 +16,10 @@ pub const MAX_RECORD_SIZE: usize = 1024 * 1024; // 1MB
 
 /// Offsets
 const DISCRIMINATOR_OFFSET: usize = 0;
-const CLASS_OFFSET: usize = DISCRIMINATOR_OFFSET + size_of::<u8>();
+pub const CLASS_OFFSET: usize = DISCRIMINATOR_OFFSET + size_of::<u8>();
 const OWNER_TYPE_OFFSET: usize = CLASS_OFFSET + size_of::<Pubkey>();
 pub const OWNER_OFFSET: usize = OWNER_TYPE_OFFSET + size_of::<u8>();
-const IS_FROZEN_OFFSET: usize = OWNER_OFFSET + size_of::<Pubkey>();
+pub const IS_FROZEN_OFFSET: usize = OWNER_OFFSET + size_of::<Pubkey>();
 const EXPIRY_OFFSET: usize = IS_FROZEN_OFFSET + size_of::<bool>();
 const SEED_LEN_OFFSET: usize = EXPIRY_OFFSET + size_of::<i64>();
 pub const SEED_OFFSET: usize = SEED_LEN_OFFSET + size_of::<u8>();
@@ -170,6 +170,10 @@ impl<'info> Record<'info> {
 
         // Validate the delegate
         let class = class.ok_or(ProgramError::MissingRequiredSignature)?;
+        if class.key().ne(&class.try_borrow_data()?[CLASS_OFFSET..CLASS_OFFSET + size_of::<Pubkey>()]) {
+            return Err(ProgramError::InvalidAccountData);
+        }
+
         Self::validate_delegate(class, authority)
     }
 
@@ -227,7 +231,11 @@ impl<'info> Record<'info> {
             return Ok(());
         }
 
+        // Validate the delegate
         let class = class.ok_or(ProgramError::MissingRequiredSignature)?;
+        if class.key().ne(&class.try_borrow_data()?[CLASS_OFFSET..CLASS_OFFSET + size_of::<Pubkey>()]) {
+            return Err(ProgramError::InvalidAccountData);
+        }
 
         Self::validate_delegate(class, authority)
     }

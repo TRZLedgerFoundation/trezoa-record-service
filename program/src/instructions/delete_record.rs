@@ -1,6 +1,6 @@
 use crate::{constants::ONE_LAMPORT_RENT, state::Record, utils::Context};
 #[cfg(not(feature = "perf"))]
-use pinocchio::log::sol_log;
+use pinocchio::{log::sol_log, sysvars::{Sysvar, rent::Rent}};
 use pinocchio::{account_info::AccountInfo, program_error::ProgramError, ProgramResult};
 
 /// DeleteRecord instruction.
@@ -82,7 +82,15 @@ impl<'info> DeleteRecord<'info> {
                 .and_then(|x| x.checked_sub(ONE_LAMPORT_RENT))
                 .ok_or(ProgramError::InvalidAccountData)?;
 
-            *self.accounts.record.borrow_mut_lamports_unchecked() = ONE_LAMPORT_RENT;
+            #[cfg(not(feature = "perf"))]
+            {
+                *self.accounts.record.borrow_mut_lamports_unchecked() = Rent::get()?.minimum_balance(1);
+            }
+
+            #[cfg(feature = "perf")]
+            {
+                *self.accounts.record.borrow_mut_lamports_unchecked() = ONE_LAMPORT_RENT;
+            }
         }
 
         Ok(())

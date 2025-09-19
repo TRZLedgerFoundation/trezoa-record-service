@@ -22,6 +22,8 @@ use crate::{
 ///   2. `[]` The mint account (same as account 0).
 ///   3. `[SIGNER]` The mint authority account.
 pub struct InitializeMetadata<'a> {
+    /// Metadata Account.
+    pub metadata: &'a AccountInfo,
     /// Mint Account.
     pub mint: &'a AccountInfo,
     /// Update Authority Account.
@@ -50,7 +52,7 @@ impl InitializeMetadata<'_> {
         // 2. mint (readonly, same as account 0)
         // 3. mint_authority (readonly, signer)
         let account_metas: [AccountMeta; 4] = [
-            AccountMeta::writable(self.mint.key()),
+            AccountMeta::writable(self.metadata.key()),
             AccountMeta::readonly(self.update_authority.key()),
             AccountMeta::readonly(self.mint.key()),
             AccountMeta::readonly_signer(self.mint_authority.key()),
@@ -78,6 +80,6 @@ impl InitializeMetadata<'_> {
             data: unsafe { from_raw_parts(instruction_data.as_ptr() as _, instruction_data_size) },
         };
 
-        invoke_signed(&instruction, &[self.mint, self.mint_authority], signers)
+        invoke_signed(&instruction, &[self.metadata, self.update_authority, self.mint, self.mint_authority], signers)
     }
 }

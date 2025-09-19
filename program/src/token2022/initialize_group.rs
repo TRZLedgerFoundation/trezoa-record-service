@@ -19,6 +19,8 @@ use crate::{
 /// ### Accounts:
 ///   0. `[WRITE]`  The mint account to initialize a close authority for.
 pub struct InitializeGroup<'a> {
+    // Group Account
+    pub group: &'a AccountInfo,
     /// Mint Account.
     pub mint: &'a AccountInfo,
     /// Mint Authority Account.
@@ -44,7 +46,7 @@ impl InitializeGroup<'_> {
     pub fn invoke_signed(&self, signers: &[Signer]) -> ProgramResult {
         // Account metadata
         let account_metas: [AccountMeta; 3] = [
-            AccountMeta::writable(self.mint.key()),
+            AccountMeta::writable(self.group.key()),
             AccountMeta::readonly(self.mint.key()),
             AccountMeta::readonly_signer(self.mint_authority.key()),
         ];
@@ -76,6 +78,6 @@ impl InitializeGroup<'_> {
             data: unsafe { from_raw_parts(instruction_data.as_ptr() as _, instruction_data.len()) },
         };
 
-        invoke_signed(&instruction, &[self.mint], signers)
+        invoke_signed(&instruction, &[self.group, self.mint, self.mint_authority], signers)
     }
 }
