@@ -12,7 +12,8 @@ pub mod create_record;
 pub use create_record::CreateRecord;
 
 pub mod update_record;
-pub use update_record::UpdateRecord;
+pub use update_record::UpdateRecordData;
+pub use update_record::UpdateRecordExpiry;
 
 pub mod transfer_record;
 pub use transfer_record::TransferRecord;

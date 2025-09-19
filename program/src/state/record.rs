@@ -306,6 +306,25 @@ impl<'info> Record<'info> {
     /// # Safety
     ///
     /// This function does not perform owner checks
+    pub unsafe fn update_expiry_unchecked(
+        data: &mut RefMut<'info, [u8]>,
+        new_expiry: i64,
+    ) -> Result<(), ProgramError> {
+        // Check if the record is frozen
+        if data[IS_FROZEN_OFFSET].eq(&1u8) {
+            return Err(ProgramError::InvalidAccountData);
+        }
+
+        // Update the expiry
+        data[EXPIRY_OFFSET..EXPIRY_OFFSET + size_of::<i64>()].clone_from_slice(&new_expiry.to_le_bytes());
+
+        Ok(())
+    }
+
+    #[inline(always)]
+    /// # Safety
+    ///
+    /// This function does not perform owner checks
     pub unsafe fn update_data_unchecked(
         record: &'info AccountInfo,
         authority: &'info AccountInfo,
