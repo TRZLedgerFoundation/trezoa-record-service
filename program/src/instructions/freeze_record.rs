@@ -33,6 +33,9 @@ impl<'info> TryFrom<&'info [AccountInfo]> for FreezeRecordAccounts<'info> {
         // Check if authority is the class authority
         Class::check_authority(class, authority)?;
 
+        // Check if the Record is correct
+        Record::check_program_id_and_discriminator(record)?;
+
         // Check if the class is the correct class
         if class.key().ne(&record.try_borrow_data()?[CLASS_OFFSET..CLASS_OFFSET + size_of::<Pubkey>()]) {
             return Err(ProgramError::InvalidAccountData);

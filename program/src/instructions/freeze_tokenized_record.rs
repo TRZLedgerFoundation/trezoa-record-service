@@ -1,5 +1,5 @@
 use crate::{
-    state::{Class, CLASS_OFFSET, OWNER_OFFSET},
+    state::{Class, Record, CLASS_OFFSET, OWNER_OFFSET},
     token2022::{FreezeAccount, ThawAccount, Token},
     utils::{ByteReader, Context},
 };
@@ -44,6 +44,9 @@ impl<'info> TryFrom<&'info [AccountInfo]> for FreezeTokenizedRecordAccounts<'inf
 
         // Check if authority is the class authority
         Class::check_authority(class, authority)?;
+
+        // Check if the Record is correct
+        Record::check_program_id_and_discriminator(record)?;
 
         let record_data = record.try_borrow_data()?;
         // Check if the class is the correct class
