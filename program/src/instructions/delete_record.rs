@@ -74,14 +74,6 @@ impl<'info> DeleteRecord<'info> {
         unsafe {
             Record::delete_record_unchecked(self.accounts.record, self.accounts.payer)?;
 
-            // Refund the payer of all the lamports
-            self.accounts
-                .payer
-                .borrow_mut_lamports_unchecked()
-                .checked_add(*self.accounts.record.borrow_lamports_unchecked())
-                .and_then(|x| x.checked_sub(ONE_LAMPORT_RENT))
-                .ok_or(ProgramError::InvalidAccountData)?;
-
             #[cfg(not(feature = "perf"))]
             {
                 *self.accounts.record.borrow_mut_lamports_unchecked() = Rent::get()?.minimum_balance(1);
