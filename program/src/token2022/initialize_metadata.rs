@@ -9,7 +9,6 @@ use pinocchio::{
 };
 
 use crate::{
-    constants::MAX_METADATA_LEN,
     token2022::constants::TOKEN_2022_PROGRAM_ID,
     utils::{write_bytes, UNINIT_BYTE},
 };

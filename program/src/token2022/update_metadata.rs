@@ -62,8 +62,8 @@ impl UpdateMetadata<'_> {
         // - [8]: field (u8)
         // - [9..13]: new_uri length (u32)
         // - [13..13+new_uri.len()]: new_uri bytes
-        let mut instruction_data =
-            [UNINIT_BYTE; Self::DISCRIMINATOR.len() + size_of::<u32>() + MAX_METADATA_LEN];
+        let instruction_data_size = Self::DISCRIMINATOR.len() + size_of::<u8>() + self.additional_metadata.len();
+        let mut instruction_data = [UNINIT_BYTE; 10_240]; // TX Size Limit 
 
         write_bytes(
             &mut instruction_data[DISCRIMINATOR_OFFSET..],
@@ -79,12 +79,10 @@ impl UpdateMetadata<'_> {
             self.additional_metadata,
         );
 
-        let instruction_len = ADDITIONAL_METADATA_LENGTH_OFFSET + self.additional_metadata.len();
-
         let instruction = Instruction {
             program_id: &TOKEN_2022_PROGRAM_ID,
             accounts: &account_metas,
-            data: unsafe { from_raw_parts(instruction_data.as_ptr() as _, instruction_len) },
+            data: unsafe { from_raw_parts(instruction_data.as_ptr() as _, instruction_data_size) },
         };
 
         invoke_signed(
