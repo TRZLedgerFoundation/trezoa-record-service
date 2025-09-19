@@ -1,5 +1,5 @@
 use crate::{
-    state::Record,
+    state::Class,
     token2022::{FreezeAccount, ThawAccount, Token},
     utils::{ByteReader, Context},
 };
@@ -25,7 +25,7 @@ use pinocchio::{
 /// 3. `token_account` - The token account that is linked to the record
 /// 4. `record` - The record account to be frozen/unfrozen
 /// 5. `token_2022_program` - Required for freezing/unfreezing the token account
-/// 6. `class` - [remaining accounts] Required if the authority is not the record owner
+/// 6. `class` - The class of the record to be frozen/unfrozen
 ///
 /// # Security
 /// 1. The authority must be either:
@@ -40,18 +40,12 @@ pub struct FreezeTokenizedRecordAccounts<'info> {
 impl<'info> TryFrom<&'info [AccountInfo]> for FreezeTokenizedRecordAccounts<'info> {
     type Error = ProgramError;
     fn try_from(accounts: &'info [AccountInfo]) -> Result<Self, Self::Error> {
-        let [owner, mint, token_account, record, _token_2022_program, rest @ ..] = accounts else {
+        let [owner, mint, token_account, record, _token_2022_program, class] = accounts else {
             return Err(ProgramError::NotEnoughAccountKeys);
         };
 
         // Check if owner is the record owner or has a delegate
-        Record::check_owner_or_delegate_tokenized(
-            record,
-            rest.first(),
-            owner,
-            mint,
-            token_account,
-        )?;
+        Class::check_authority(class, owner)?;
 
         Ok(Self {
             mint,

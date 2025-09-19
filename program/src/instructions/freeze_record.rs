@@ -1,5 +1,5 @@
 use crate::{
-    state::Record,
+    state::{Class, Record},
     utils::{ByteReader, Context},
 };
 use core::mem::size_of;
@@ -15,7 +15,7 @@ use pinocchio::{account_info::AccountInfo, program_error::ProgramError, ProgramR
 /// # Accounts
 /// 1. `authority` - The account that has permission to freeze/unfreeze the record (must be a signer)
 /// 2. `record` - The record account to be frozen/unfrozen
-/// 3. `class` - [optional] The class of the record to be frozen/unfrozen
+/// 3. `class` - The class of the record to be frozen/unfrozen
 ///
 /// # Security
 /// 1. The authority must be either:
@@ -28,12 +28,12 @@ pub struct FreezeRecordAccounts<'info> {
 impl<'info> TryFrom<&'info [AccountInfo]> for FreezeRecordAccounts<'info> {
     type Error = ProgramError;
     fn try_from(accounts: &'info [AccountInfo]) -> Result<Self, Self::Error> {
-        let [authority, record, rest @ ..] = accounts else {
+        let [authority, record, class] = accounts else {
             return Err(ProgramError::NotEnoughAccountKeys);
         };
 
         // Check if authority is the record owner or has a delegate
-        Record::check_owner_or_delegate(record, rest.first(), authority)?;
+        Class::check_authority(class, authority)?;
 
         Ok(Self { record })
     }
