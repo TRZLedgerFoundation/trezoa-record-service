@@ -30,7 +30,7 @@ impl<'info> Mint<'info> {
         Ok(())
     }
 
-    pub fn check_initialized(account_info: &AccountInfo) -> Result<bool, ProgramError> {
+    pub fn check_discriminator(account_info: &AccountInfo) -> Result<bool, ProgramError> {
         if unsafe { account_info.owner().ne(&TOKEN_2022_PROGRAM_ID) } {
             return Ok(false);
         }

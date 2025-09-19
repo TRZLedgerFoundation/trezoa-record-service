@@ -138,7 +138,7 @@ impl<'info> MintTokenizedRecord<'info> {
         let group_bump = self.derive_group_address_bump()?;
 
         // Check if the group already exists
-        if !Mint::check_initialized(self.accounts.group)? {
+        if !Mint::check_discriminator(self.accounts.group)? {
             // Create the group mint account if needed
             self.create_group_mint_account(&group_bump)?;
             // Initialize the group pointer extension
