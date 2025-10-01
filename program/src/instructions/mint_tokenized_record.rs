@@ -11,7 +11,7 @@ use crate::{
             TOKEN_2022_CLOSE_MINT_AUTHORITY_LEN, TOKEN_2022_GROUP_LEN, TOKEN_2022_GROUP_POINTER_LEN, TOKEN_2022_MEMBER_LEN, TOKEN_2022_MEMBER_POINTER_LEN, TOKEN_2022_METADATA_LEN, TOKEN_2022_METADATA_POINTER_LEN, TOKEN_2022_MINT_BASE_LEN, TOKEN_2022_MINT_LEN, TOKEN_2022_PERMANENT_DELEGATE_LEN, TOKEN_2022_PROGRAM_ID
         }, FreezeAccount, InitializeGroup, InitializeGroupMemberPointer, InitializeGroupPointer, InitializeMember, InitializeMetadata, InitializeMetadataPointer, InitializeMint2, InitializeMintCloseAuthority, InitializePermanentDelegate, Mint, MintToChecked, Token, UpdateMetadata
     },
-    utils::Context,
+    utils::Context, ID,
 };
 use pinocchio::{
     account_info::AccountInfo,
@@ -90,6 +90,11 @@ impl<'info> TryFrom<&'info [AccountInfo]> for MintTokenizedRecordAccounts<'info>
             find_program_address(&seeds, &pinocchio_associated_token_account::ID);
 
         if token_account_address.ne(token_account.key()) {
+            return Err(ProgramError::InvalidAccountData);
+        }
+
+        let group_key = find_program_address(&[b"group", class.key()], &ID).0;
+        if group_key.ne(group.key()) {
             return Err(ProgramError::InvalidAccountData);
         }
 
