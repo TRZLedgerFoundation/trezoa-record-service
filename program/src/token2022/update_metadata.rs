@@ -62,7 +62,7 @@ impl UpdateMetadata<'_> {
         // - [9..13]: new_uri length (u32)
         // - [13..13+new_uri.len()]: new_uri bytes
         let instruction_data_size = Self::DISCRIMINATOR.len() + size_of::<u8>() + self.additional_metadata.len();
-        let mut instruction_data = [UNINIT_BYTE; 10_240]; // TX Size Limit 
+        let mut instruction_data = [UNINIT_BYTE; 2_000];
 
         write_bytes(
             &mut instruction_data[DISCRIMINATOR_OFFSET..],

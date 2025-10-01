@@ -61,7 +61,7 @@ impl InitializeMetadata<'_> {
         // - [0]: instruction discriminator (8 bytes, [u8;8])
         // - [8..]: metadata data
         let instruction_data_size = Self::DISCRIMINATOR.len() + self.metadata_data.len();
-        let mut instruction_data = [UNINIT_BYTE; 10_240]; // TX Size Limit 
+        let mut instruction_data = [UNINIT_BYTE; 2_000];
 
         write_bytes(
             &mut instruction_data[Self::DISCRIMINATOR_OFFSET..],

@@ -1,3 +1,4 @@
+use core::mem::size_of;
 use crate::{
     state::{Class, Record, CLASS_OFFSET},
     utils::{ByteReader, Context},

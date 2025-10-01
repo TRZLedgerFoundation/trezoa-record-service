@@ -1,3 +1,4 @@
+use core::mem::size_of;
 use crate::constants::MAX_METADATA_LEN;
 use crate::state::Class;
 use crate::utils::{ByteReader, Context};
