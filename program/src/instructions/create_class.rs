@@ -173,11 +173,11 @@ impl<'info> CreateClass<'info> {
 
             if self.accounts.class.lamports() < lamports {
                 Transfer {
-                    from: self.accounts.class,
-                    to: self.accounts.payer,
+                    from: self.accounts.payer,
+                    to: self.accounts.class,
                     lamports: lamports - self.accounts.class.lamports(),
                 }
-                .invoke_signed(&signers)?;
+                .invoke()?;
             }
         } else {
             CreateAccount {

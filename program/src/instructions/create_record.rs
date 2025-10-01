@@ -161,11 +161,11 @@ impl<'info> CreateRecord<'info> {
 
             if self.accounts.record.lamports() < lamports {
                 Transfer {
-                    from: self.accounts.record,
-                    to: self.accounts.payer,
+                    from: self.accounts.payer,
+                    to: self.accounts.record,
                     lamports: lamports - self.accounts.record.lamports(),
                 }
-                .invoke_signed(&signers)?;
+                .invoke()?;
             }
         } else {
             CreateAccount {

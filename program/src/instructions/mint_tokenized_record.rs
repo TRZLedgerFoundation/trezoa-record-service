@@ -239,11 +239,11 @@ impl<'info> MintTokenizedRecord<'info> {
 
             if self.accounts.group.lamports() < lamports {
                 Transfer {
-                    from: self.accounts.group,
-                    to: self.accounts.payer,
+                    from: self.accounts.payer,
+                    to: self.accounts.group,
                     lamports: lamports - self.accounts.group.lamports(),
                 }
-                .invoke_signed(&signers)?;
+                .invoke()?;
             }
         } else {
             CreateAccount {
@@ -342,11 +342,11 @@ impl<'info> MintTokenizedRecord<'info> {
 
             if self.accounts.mint.lamports() < lamports {
                 Transfer {
-                    from: self.accounts.mint,
-                    to: self.accounts.payer,
+                    from: self.accounts.payer,
+                    to: self.accounts.mint,
                     lamports: lamports - self.accounts.mint.lamports(),
                 }
-                .invoke_signed(&signers)?;
+                .invoke()?;
             }
         } else {
             CreateAccount {

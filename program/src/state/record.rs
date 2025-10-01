@@ -152,7 +152,7 @@ impl<'info> Record<'info> {
         let data = record.try_borrow_data()?;
 
         // Check if the Mint has been burned without passing through the BurnTokenizedRecord instruction
-        if data[OWNER_TYPE_OFFSET] == 2 {
+        if data[OWNER_TYPE_OFFSET].ne(&(OwnerType::Token as u8)) {
             let mint = mint.ok_or(ProgramError::InvalidAccountData)?;
 
             if mint.key().ne(&data[OWNER_OFFSET..OWNER_OFFSET + size_of::<Pubkey>()]) {
@@ -177,11 +177,6 @@ impl<'info> Record<'info> {
             .eq(&data[OWNER_OFFSET..OWNER_OFFSET + size_of::<Pubkey>()])
         {
             return Ok(());
-        }
-
-        // Check if the owner type is pubkey
-        if data[OWNER_TYPE_OFFSET].ne(&(OwnerType::Pubkey as u8)) {
-            return Err(ProgramError::InvalidAccountData);
         }
 
         // Validate the delegate
