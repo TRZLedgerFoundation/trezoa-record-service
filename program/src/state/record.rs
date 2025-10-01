@@ -1,12 +1,10 @@
 use crate::{
-    token2022::{Mint, Token},
+    token2022::{CloseAccount, Mint, Token},
     utils::{resize_account, ByteReader, ByteWriter},
 };
 use core::{mem::size_of, str};
 use pinocchio::{
-    account_info::{AccountInfo, Ref, RefMut},
-    program_error::ProgramError,
-    pubkey::Pubkey,
+    account_info::{AccountInfo, Ref, RefMut}, instruction::{Seed, Signer}, program_error::ProgramError, pubkey::{try_find_program_address, Pubkey}
 };
 
 use super::{Class, IS_PERMISSIONED_OFFSET};
@@ -159,9 +157,33 @@ impl<'info> Record<'info> {
                 return Err(ProgramError::InvalidAccountData);
             }
 
-            if mint.try_borrow_data()?.len() != 0 {
+            if Mint::get_supply(mint)? != 0 {
                 return Err(ProgramError::InvalidAccountData);
             }
+
+            // Close the Mint and get back the rent
+            let bump = [
+            try_find_program_address(&[b"mint", record.key()], &crate::ID)
+                .ok_or(ProgramError::InvalidArgument)?
+                .1,
+            ];
+
+
+            let seeds = [
+                Seed::from(b"mint"),
+                Seed::from(record.key()),
+                Seed::from(&bump),
+            ];
+    
+            let signers = [Signer::from(&seeds)];
+    
+            // Close the mint account
+            CloseAccount {
+                account: mint,
+                destination: authority,
+                authority: mint,
+            }
+            .invoke_signed(&signers)?;
 
             return Ok(());
         }
