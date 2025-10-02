@@ -864,6 +864,46 @@ fn update_class_metadata_incorrect_authority() {
 }
 
 #[test]
+fn update_class_authority() {
+    // Authority
+    let (authority, authority_data) = keyed_account_for_authority();
+    // New Authority
+    let (new_authority, _) = keyed_account_for_random_authority();
+    // Class
+    let (class, class_data) = keyed_account_for_class_default();
+    //System Program
+    let (system_program, system_program_data) = keyed_account_for_system_program();
+
+    let instruction = UpdateClassAuthority { 
+        authority: authority,
+        payer: authority,
+        class,
+        system_program, 
+    }.instruction(UpdateClassAuthorityInstructionArgs { new_authority });
+
+    let mollusk = Mollusk::new(
+        &SOLANA_RECORD_SERVICE_ID,
+        "../target/deploy/solana_record_service",
+    );
+
+    // Class Updated
+    let (_, class_data_updated) = keyed_account_for_class(new_authority, false, false, "test", "test");
+
+    mollusk.process_and_validate_instruction(
+        &instruction,
+        &[
+            (authority, authority_data),
+            (class, class_data),
+            (system_program, system_program_data),
+        ],
+        &[
+            Check::success(),
+            Check::account(&class).data(&class_data_updated.data).build(),
+        ],
+    );
+}
+
+#[test]
 fn update_class_frozen() {
     // Authority
     let (authority, authority_data) = keyed_account_for_authority();
