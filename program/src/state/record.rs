@@ -1,6 +1,6 @@
 use crate::{
     token2022::{CloseAccount, Mint, Token},
-    utils::{resize_account, ByteReader, ByteWriter},
+    utils::{resize_account, ByteWriter},
 };
 use core::{mem::size_of, str};
 use pinocchio::{
@@ -8,9 +8,6 @@ use pinocchio::{
 };
 
 use super::{Class, IS_PERMISSIONED_OFFSET};
-
-/// Maximum size allowed for a record account
-pub const MAX_RECORD_SIZE: usize = 1024 * 10; // 1MB
 
 /// Offsets
 const DISCRIMINATOR_OFFSET: usize = 0;
@@ -79,43 +76,6 @@ impl<'info> Record<'info> {
         }
 
         Ok(())
-    }
-
-    #[inline(always)]
-    /// # Safety
-    ///
-    /// This function does not perform owner checks
-    pub unsafe fn check_owner_unchecked(
-        data: &[u8],
-        owner: &AccountInfo,
-    ) -> Result<(), ProgramError> {
-        if !owner.is_signer() {
-            return Err(ProgramError::MissingRequiredSignature);
-        }
-
-        // Check if the authority is the owner
-        if owner
-            .key()
-            .ne(&data[OWNER_OFFSET..OWNER_OFFSET + size_of::<Pubkey>()])
-        {
-            return Err(ProgramError::MissingRequiredSignature);
-        }
-
-        Ok(())
-    }
-
-    #[inline(always)]
-    pub fn check_owner(
-        account_info: &AccountInfo,
-        owner: &AccountInfo,
-    ) -> Result<(), ProgramError> {
-        // Check the program id and the discriminator
-        Self::check_program_id_and_discriminator(account_info)?;
-
-        let data = account_info.try_borrow_data()?;
-
-        // Check the owner
-        unsafe { Self::check_owner_unchecked(&data, owner) }
     }
 
     #[inline(always)]
@@ -500,11 +460,11 @@ impl<'info> Record<'info> {
     ) -> Result<(&'info [u8], Option<&'info [u8]>), ProgramError> {
         let mut offset = SEED_LEN_OFFSET + size_of::<u8>() + data[SEED_LEN_OFFSET] as usize;
 
-        // Read name_len and skip name
-        let name_len =
+        // Read seed_len and skip seed
+        let seed_len =
             u32::from_le_bytes(data[offset..offset + size_of::<u32>()].try_into().unwrap())
                 as usize;
-        offset += size_of::<u32>() + name_len;
+        offset += size_of::<u32>() + seed_len;
 
         // Read ticker_len and skip ticker
         let ticker_len =
@@ -562,22 +522,5 @@ impl<'info> Record<'info> {
         variable_data.write_str(self.data)?;
 
         Ok(())
-    }
-
-    /// # Safety
-    /// SRS Program ID is not checked
-    #[inline(always)]
-    pub unsafe fn from_bytes_unchecked(data: &'info [u8]) -> Result<Self, ProgramError> {
-        let mut variable = ByteReader::new_with_offset(data, SEED_LEN_OFFSET);
-
-        Ok(Self {
-            class: ByteReader::read_with_offset(data, CLASS_OFFSET)?,
-            owner_type: ByteReader::read_with_offset(data, OWNER_TYPE_OFFSET)?,
-            owner: ByteReader::read_with_offset(data, OWNER_OFFSET)?,
-            is_frozen: ByteReader::read_with_offset(data, IS_FROZEN_OFFSET)?,
-            expiry: ByteReader::read_with_offset(data, EXPIRY_OFFSET)?,
-            seed: variable.read_bytes_with_length()?,
-            data: variable.read_str(variable.remaining_bytes())?,
-        })
     }
 }

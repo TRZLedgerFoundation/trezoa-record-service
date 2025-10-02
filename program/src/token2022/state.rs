@@ -96,16 +96,6 @@ impl<'info> Token<'info> {
 
     /// # Safety
     /// Token Program ID is not checked
-    pub unsafe fn get_mint_address_unchecked(data: &[u8]) -> Result<Pubkey, ProgramError> {
-        Ok(
-            data[TOKEN_MINT_OFFSET..TOKEN_MINT_OFFSET + size_of::<Pubkey>()]
-                .try_into()
-                .unwrap(),
-        )
-    }
-
-    /// # Safety
-    /// Token Program ID is not checked
     pub unsafe fn get_owner_unchecked(data: &[u8]) -> Result<Pubkey, ProgramError> {
         Ok(
             data[TOKEN_OWNER_OFFSET..TOKEN_OWNER_OFFSET + size_of::<Pubkey>()]

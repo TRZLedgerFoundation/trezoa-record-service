@@ -111,27 +111,6 @@ impl<'info> Class<'info> {
     /// # Safety
     ///
     /// This function does not perform owner checks
-    pub unsafe fn update_is_permissioned_unchecked(
-        data: &'info mut [u8],
-        authority: &'info AccountInfo,
-        is_permissioned: bool,
-    ) -> Result<(), ProgramError> {
-        unsafe {
-            Self::check_authority_unchecked(data, authority)?;
-        }
-
-        if data[IS_PERMISSIONED_OFFSET] == is_permissioned as u8 {
-            return Ok(());
-        }
-
-        data[IS_PERMISSIONED_OFFSET] = is_permissioned as u8;
-
-        Ok(())
-    }
-
-    /// # Safety
-    ///
-    /// This function does not perform owner checks
     pub unsafe fn update_is_frozen_unchecked(
         class: &'info AccountInfo,
         is_frozen: bool,

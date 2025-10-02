@@ -216,9 +216,9 @@ impl<'info> MintTokenizedRecord<'info> {
 
     fn create_group_mint_account(&self, bump: &[u8; 1]) -> Result<(), ProgramError> {
         // Space of all our static extensions
-        let space = TOKEN_2022_MINT_LEN + TOKEN_2022_MINT_BASE_LEN + TOKEN_2022_GROUP_POINTER_LEN;
+        let space = TOKEN_2022_MINT_LEN + TOKEN_2022_MINT_BASE_LEN + TOKEN_2022_GROUP_POINTER_LEN + TOKEN_2022_GROUP_LEN;
 
-        let lamports = Rent::get()?.minimum_balance(space + TOKEN_2022_GROUP_LEN);
+        let lamports = Rent::get()?.minimum_balance(space);
 
         let seeds = [
             Seed::from(b"group"),
