@@ -5,6 +5,8 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
+pub(crate) mod r#additional_metadata;
 pub(crate) mod r#metadata;
 
+pub use self::r#additional_metadata::*;
 pub use self::r#metadata::*;

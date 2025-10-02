@@ -16,6 +16,7 @@ import {
 } from '@metaplex-foundation/umi';
 import {
   Serializer,
+  i64,
   mapSerializer,
   struct,
   u8,
@@ -25,10 +26,9 @@ import {
   ResolvedAccountsWithIndices,
   getAccountMetasAndSigners,
 } from '../shared';
-import { Metadata, MetadataArgs, getMetadataSerializer } from '../types';
 
 // Accounts.
-export type UpdateRecordTokenizableInstructionAccounts = {
+export type UpdateRecordExpiryInstructionAccounts = {
   /** Record owner or class authority for permissioned classes */
   authority: Signer;
   /** Account that will pay of get refunded for the record update */
@@ -42,47 +42,45 @@ export type UpdateRecordTokenizableInstructionAccounts = {
 };
 
 // Data.
-export type UpdateRecordTokenizableInstructionData = {
+export type UpdateRecordExpiryInstructionData = {
   discriminator: number;
-  metadata: Metadata;
+  expiry: bigint;
 };
 
-export type UpdateRecordTokenizableInstructionDataArgs = {
-  metadata: MetadataArgs;
-};
+export type UpdateRecordExpiryInstructionDataArgs = { expiry: number | bigint };
 
-export function getUpdateRecordTokenizableInstructionDataSerializer(): Serializer<
-  UpdateRecordTokenizableInstructionDataArgs,
-  UpdateRecordTokenizableInstructionData
+export function getUpdateRecordExpiryInstructionDataSerializer(): Serializer<
+  UpdateRecordExpiryInstructionDataArgs,
+  UpdateRecordExpiryInstructionData
 > {
   return mapSerializer<
-    UpdateRecordTokenizableInstructionDataArgs,
+    UpdateRecordExpiryInstructionDataArgs,
     any,
-    UpdateRecordTokenizableInstructionData
+    UpdateRecordExpiryInstructionData
   >(
-    struct<UpdateRecordTokenizableInstructionData>(
+    struct<UpdateRecordExpiryInstructionData>(
       [
         ['discriminator', u8()],
-        ['metadata', getMetadataSerializer()],
+        ['expiry', i64()],
       ],
-      { description: 'UpdateRecordTokenizableInstructionData' }
+      { description: 'UpdateRecordExpiryInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 5 })
+    (value) => ({ ...value, discriminator: 6 })
   ) as Serializer<
-    UpdateRecordTokenizableInstructionDataArgs,
-    UpdateRecordTokenizableInstructionData
+    UpdateRecordExpiryInstructionDataArgs,
+    UpdateRecordExpiryInstructionData
   >;
 }
 
 // Args.
-export type UpdateRecordTokenizableInstructionArgs =
-  UpdateRecordTokenizableInstructionDataArgs;
+export type UpdateRecordExpiryInstructionArgs =
+  UpdateRecordExpiryInstructionDataArgs;
 
 // Instruction.
-export function updateRecordTokenizable(
+export function updateRecordExpiry(
   context: Pick<Context, 'programs'>,
-  input: UpdateRecordTokenizableInstructionAccounts &
-    UpdateRecordTokenizableInstructionArgs
+  input: UpdateRecordExpiryInstructionAccounts &
+    UpdateRecordExpiryInstructionArgs
 ): TransactionBuilder {
   // Program ID.
   const programId = context.programs.getPublicKey(
@@ -120,7 +118,7 @@ export function updateRecordTokenizable(
   } satisfies ResolvedAccountsWithIndices;
 
   // Arguments.
-  const resolvedArgs: UpdateRecordTokenizableInstructionArgs = { ...input };
+  const resolvedArgs: UpdateRecordExpiryInstructionArgs = { ...input };
 
   // Default values.
   if (!resolvedAccounts.systemProgram.value) {
@@ -144,8 +142,8 @@ export function updateRecordTokenizable(
   );
 
   // Data.
-  const data = getUpdateRecordTokenizableInstructionDataSerializer().serialize(
-    resolvedArgs as UpdateRecordTokenizableInstructionDataArgs
+  const data = getUpdateRecordExpiryInstructionDataSerializer().serialize(
+    resolvedArgs as UpdateRecordExpiryInstructionDataArgs
   );
 
   // Bytes Created On Chain.

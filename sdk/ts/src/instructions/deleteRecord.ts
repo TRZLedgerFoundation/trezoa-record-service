@@ -55,7 +55,7 @@ export function getDeleteRecordInstructionDataSerializer(): Serializer<
     struct<DeleteRecordInstructionData>([['discriminator', u8()]], {
       description: 'DeleteRecordInstructionData',
     }),
-    (value) => ({ ...value, discriminator: 6 })
+    (value) => ({ ...value, discriminator: 8 })
   ) as Serializer<DeleteRecordInstructionDataArgs, DeleteRecordInstructionData>;
 }
 

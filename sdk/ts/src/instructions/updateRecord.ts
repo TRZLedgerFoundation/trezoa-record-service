@@ -65,7 +65,7 @@ export function getUpdateRecordInstructionDataSerializer(): Serializer<
       ],
       { description: 'UpdateRecordInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 4 })
+    (value) => ({ ...value, discriminator: 5 })
   ) as Serializer<UpdateRecordInstructionDataArgs, UpdateRecordInstructionData>;
 }
 

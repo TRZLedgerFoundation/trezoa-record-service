@@ -61,7 +61,7 @@ export function getTransferTokenizedRecordInstructionDataSerializer(): Serialize
     struct<TransferTokenizedRecordInstructionData>([['discriminator', u8()]], {
       description: 'TransferTokenizedRecordInstructionData',
     }),
-    (value) => ({ ...value, discriminator: 10 })
+    (value) => ({ ...value, discriminator: 12 })
   ) as Serializer<
     TransferTokenizedRecordInstructionDataArgs,
     TransferTokenizedRecordInstructionData

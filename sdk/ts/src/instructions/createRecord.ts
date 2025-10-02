@@ -76,7 +76,7 @@ export function getCreateRecordInstructionDataSerializer(): Serializer<
       ],
       { description: 'CreateRecordInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 3 })
+    (value) => ({ ...value, discriminator: 4 })
   ) as Serializer<CreateRecordInstructionDataArgs, CreateRecordInstructionData>;
 }
 

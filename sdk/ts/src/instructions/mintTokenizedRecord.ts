@@ -69,7 +69,7 @@ export function getMintTokenizedRecordInstructionDataSerializer(): Serializer<
     struct<MintTokenizedRecordInstructionData>([['discriminator', u8()]], {
       description: 'MintTokenizedRecordInstructionData',
     }),
-    (value) => ({ ...value, discriminator: 8 })
+    (value) => ({ ...value, discriminator: 10 })
   ) as Serializer<
     MintTokenizedRecordInstructionDataArgs,
     MintTokenizedRecordInstructionData

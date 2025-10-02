@@ -59,7 +59,7 @@ export function getFreezeClassInstructionDataSerializer(): Serializer<
       ],
       { description: 'FreezeClassInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 2 })
+    (value) => ({ ...value, discriminator: 3 })
   ) as Serializer<FreezeClassInstructionDataArgs, FreezeClassInstructionData>;
 }
 

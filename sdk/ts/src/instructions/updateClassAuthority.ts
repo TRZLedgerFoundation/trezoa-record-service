@@ -17,6 +17,7 @@ import {
 import {
   Serializer,
   mapSerializer,
+  publicKey as publicKeySerializer,
   struct,
   u8,
 } from '@metaplex-foundation/umi/serializers';
@@ -25,64 +26,61 @@ import {
   ResolvedAccountsWithIndices,
   getAccountMetasAndSigners,
 } from '../shared';
-import { Metadata, MetadataArgs, getMetadataSerializer } from '../types';
 
 // Accounts.
-export type UpdateRecordTokenizableInstructionAccounts = {
-  /** Record owner or class authority for permissioned classes */
+export type UpdateClassAuthorityInstructionAccounts = {
+  /** Authority used to update a class */
   authority: Signer;
-  /** Account that will pay of get refunded for the record update */
+  /** Account that will pay of get refunded for the class update */
   payer: Signer;
-  /** Record account to be updated */
-  record: PublicKey | Pda;
-  /** System Program used to extend our record account */
+  /** Class account to be updated */
+  class: PublicKey | Pda;
+  /** System Program used to extend our class account */
   systemProgram?: PublicKey | Pda;
-  /** Class account of the record */
-  class?: PublicKey | Pda;
 };
 
 // Data.
-export type UpdateRecordTokenizableInstructionData = {
+export type UpdateClassAuthorityInstructionData = {
   discriminator: number;
-  metadata: Metadata;
+  newAuthority: PublicKey;
 };
 
-export type UpdateRecordTokenizableInstructionDataArgs = {
-  metadata: MetadataArgs;
+export type UpdateClassAuthorityInstructionDataArgs = {
+  newAuthority: PublicKey;
 };
 
-export function getUpdateRecordTokenizableInstructionDataSerializer(): Serializer<
-  UpdateRecordTokenizableInstructionDataArgs,
-  UpdateRecordTokenizableInstructionData
+export function getUpdateClassAuthorityInstructionDataSerializer(): Serializer<
+  UpdateClassAuthorityInstructionDataArgs,
+  UpdateClassAuthorityInstructionData
 > {
   return mapSerializer<
-    UpdateRecordTokenizableInstructionDataArgs,
+    UpdateClassAuthorityInstructionDataArgs,
     any,
-    UpdateRecordTokenizableInstructionData
+    UpdateClassAuthorityInstructionData
   >(
-    struct<UpdateRecordTokenizableInstructionData>(
+    struct<UpdateClassAuthorityInstructionData>(
       [
         ['discriminator', u8()],
-        ['metadata', getMetadataSerializer()],
+        ['newAuthority', publicKeySerializer()],
       ],
-      { description: 'UpdateRecordTokenizableInstructionData' }
+      { description: 'UpdateClassAuthorityInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 5 })
+    (value) => ({ ...value, discriminator: 2 })
   ) as Serializer<
-    UpdateRecordTokenizableInstructionDataArgs,
-    UpdateRecordTokenizableInstructionData
+    UpdateClassAuthorityInstructionDataArgs,
+    UpdateClassAuthorityInstructionData
   >;
 }
 
 // Args.
-export type UpdateRecordTokenizableInstructionArgs =
-  UpdateRecordTokenizableInstructionDataArgs;
+export type UpdateClassAuthorityInstructionArgs =
+  UpdateClassAuthorityInstructionDataArgs;
 
 // Instruction.
-export function updateRecordTokenizable(
+export function updateClassAuthority(
   context: Pick<Context, 'programs'>,
-  input: UpdateRecordTokenizableInstructionAccounts &
-    UpdateRecordTokenizableInstructionArgs
+  input: UpdateClassAuthorityInstructionAccounts &
+    UpdateClassAuthorityInstructionArgs
 ): TransactionBuilder {
   // Program ID.
   const programId = context.programs.getPublicKey(
@@ -102,25 +100,20 @@ export function updateRecordTokenizable(
       isWritable: true as boolean,
       value: input.payer ?? null,
     },
-    record: {
+    class: {
       index: 2,
       isWritable: true as boolean,
-      value: input.record ?? null,
+      value: input.class ?? null,
     },
     systemProgram: {
       index: 3,
       isWritable: false as boolean,
       value: input.systemProgram ?? null,
     },
-    class: {
-      index: 4,
-      isWritable: false as boolean,
-      value: input.class ?? null,
-    },
   } satisfies ResolvedAccountsWithIndices;
 
   // Arguments.
-  const resolvedArgs: UpdateRecordTokenizableInstructionArgs = { ...input };
+  const resolvedArgs: UpdateClassAuthorityInstructionArgs = { ...input };
 
   // Default values.
   if (!resolvedAccounts.systemProgram.value) {
@@ -144,8 +137,8 @@ export function updateRecordTokenizable(
   );
 
   // Data.
-  const data = getUpdateRecordTokenizableInstructionDataSerializer().serialize(
-    resolvedArgs as UpdateRecordTokenizableInstructionDataArgs
+  const data = getUpdateClassAuthorityInstructionDataSerializer().serialize(
+    resolvedArgs as UpdateClassAuthorityInstructionDataArgs
   );
 
   // Bytes Created On Chain.

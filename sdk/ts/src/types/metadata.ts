@@ -13,22 +13,25 @@ import {
   string,
   struct,
 } from '@metaplex-foundation/umi/serializers';
+import {
+  AdditionalMetadata,
+  AdditionalMetadataArgs,
+  getAdditionalMetadataSerializer,
+} from '.';
 
 /** Token22 Metadata Extension compatible Metadata format */
 export type Metadata = {
   name: string;
   symbol: string;
   uri: string;
-  /** Additional metadata for Token22 Metadata Extension compatible Metadata format */
-  additionalMetadata: Array<{ label: string; value: string }>;
+  additionalMetadata: Array<AdditionalMetadata>;
 };
 
 export type MetadataArgs = {
   name: string;
   symbol?: string;
   uri: string;
-  /** Additional metadata for Token22 Metadata Extension compatible Metadata format */
-  additionalMetadata: Array<{ label: string; value: string }>;
+  additionalMetadata: Array<AdditionalMetadataArgs>;
 };
 
 export function getMetadataSerializer(): Serializer<MetadataArgs, Metadata> {
@@ -38,15 +41,7 @@ export function getMetadataSerializer(): Serializer<MetadataArgs, Metadata> {
         ['name', string()],
         ['symbol', string()],
         ['uri', string()],
-        [
-          'additionalMetadata',
-          array(
-            struct<any>([
-              ['label', string()],
-              ['value', string()],
-            ])
-          ),
-        ],
+        ['additionalMetadata', array(getAdditionalMetadataSerializer())],
       ],
       { description: 'Metadata' }
     ),
