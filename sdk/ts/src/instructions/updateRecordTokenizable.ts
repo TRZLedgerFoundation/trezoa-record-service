@@ -35,10 +35,10 @@ export type UpdateRecordTokenizableInstructionAccounts = {
   payer: Signer;
   /** Record account to be updated */
   record: PublicKey | Pda;
+  /** Class account of the record */
+  class: PublicKey | Pda;
   /** System Program used to extend our record account */
   systemProgram?: PublicKey | Pda;
-  /** Class account of the record */
-  class?: PublicKey | Pda;
 };
 
 // Data.
@@ -107,15 +107,15 @@ export function updateRecordTokenizable(
       isWritable: true as boolean,
       value: input.record ?? null,
     },
-    systemProgram: {
+    class: {
       index: 3,
       isWritable: false as boolean,
-      value: input.systemProgram ?? null,
+      value: input.class ?? null,
     },
-    class: {
+    systemProgram: {
       index: 4,
       isWritable: false as boolean,
-      value: input.class ?? null,
+      value: input.systemProgram ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;
 
@@ -139,7 +139,7 @@ export function updateRecordTokenizable(
   // Keys and Signers.
   const [keys, signers] = getAccountMetasAndSigners(
     orderedAccounts,
-    'programId',
+    'omitted',
     programId
   );
 

@@ -16,7 +16,7 @@ pub struct FreezeRecord {
     /// Record account to be updated
     pub record: solana_program::pubkey::Pubkey,
     /// Class account of the record
-    pub class: Option<solana_program::pubkey::Pubkey>,
+    pub class: solana_program::pubkey::Pubkey,
 }
 
 impl FreezeRecord {
@@ -42,16 +42,9 @@ impl FreezeRecord {
             self.record,
             false,
         ));
-        if let Some(class) = self.class {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                class, false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLANA_RECORD_SERVICE_ID,
-                false,
-            ));
-        }
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.class, false,
+        ));
         accounts.extend_from_slice(remaining_accounts);
         let mut data = borsh::to_vec(&FreezeRecordInstructionData::new()).unwrap();
         let mut args = borsh::to_vec(&args).unwrap();
@@ -95,7 +88,7 @@ pub struct FreezeRecordInstructionArgs {
 ///
 ///   0. `[writable, signer]` authority
 ///   1. `[writable]` record
-///   2. `[optional]` class
+///   2. `[]` class
 #[derive(Clone, Debug, Default)]
 pub struct FreezeRecordBuilder {
     authority: Option<solana_program::pubkey::Pubkey>,
@@ -121,11 +114,10 @@ impl FreezeRecordBuilder {
         self.record = Some(record);
         self
     }
-    /// `[optional account]`
     /// Class account of the record
     #[inline(always)]
-    pub fn class(&mut self, class: Option<solana_program::pubkey::Pubkey>) -> &mut Self {
-        self.class = class;
+    pub fn class(&mut self, class: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.class = Some(class);
         self
     }
     #[inline(always)]
@@ -156,7 +148,7 @@ impl FreezeRecordBuilder {
         let accounts = FreezeRecord {
             authority: self.authority.expect("authority is not set"),
             record: self.record.expect("record is not set"),
-            class: self.class,
+            class: self.class.expect("class is not set"),
         };
         let args = FreezeRecordInstructionArgs {
             is_frozen: self.is_frozen.clone().expect("is_frozen is not set"),
@@ -173,7 +165,7 @@ pub struct FreezeRecordCpiAccounts<'a, 'b> {
     /// Record account to be updated
     pub record: &'b solana_program::account_info::AccountInfo<'a>,
     /// Class account of the record
-    pub class: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub class: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
 /// `freeze_record` CPI instruction.
@@ -185,7 +177,7 @@ pub struct FreezeRecordCpi<'a, 'b> {
     /// Record account to be updated
     pub record: &'b solana_program::account_info::AccountInfo<'a>,
     /// Class account of the record
-    pub class: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    pub class: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
     pub __args: FreezeRecordInstructionArgs,
 }
@@ -247,16 +239,10 @@ impl<'a, 'b> FreezeRecordCpi<'a, 'b> {
             *self.record.key,
             false,
         ));
-        if let Some(class) = self.class {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                *class.key, false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLANA_RECORD_SERVICE_ID,
-                false,
-            ));
-        }
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.class.key,
+            false,
+        ));
         remaining_accounts.iter().for_each(|remaining_account| {
             accounts.push(solana_program::instruction::AccountMeta {
                 pubkey: *remaining_account.0.key,
@@ -277,9 +263,7 @@ impl<'a, 'b> FreezeRecordCpi<'a, 'b> {
         account_infos.push(self.__program.clone());
         account_infos.push(self.authority.clone());
         account_infos.push(self.record.clone());
-        if let Some(class) = self.class {
-            account_infos.push(class.clone());
-        }
+        account_infos.push(self.class.clone());
         remaining_accounts
             .iter()
             .for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
@@ -298,7 +282,7 @@ impl<'a, 'b> FreezeRecordCpi<'a, 'b> {
 ///
 ///   0. `[writable, signer]` authority
 ///   1. `[writable]` record
-///   2. `[optional]` class
+///   2. `[]` class
 #[derive(Clone, Debug)]
 pub struct FreezeRecordCpiBuilder<'a, 'b> {
     instruction: Box<FreezeRecordCpiBuilderInstruction<'a, 'b>>,
@@ -334,14 +318,10 @@ impl<'a, 'b> FreezeRecordCpiBuilder<'a, 'b> {
         self.instruction.record = Some(record);
         self
     }
-    /// `[optional account]`
     /// Class account of the record
     #[inline(always)]
-    pub fn class(
-        &mut self,
-        class: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    ) -> &mut Self {
-        self.instruction.class = class;
+    pub fn class(&mut self, class: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+        self.instruction.class = Some(class);
         self
     }
     #[inline(always)]
@@ -404,7 +384,7 @@ impl<'a, 'b> FreezeRecordCpiBuilder<'a, 'b> {
 
             record: self.instruction.record.expect("record is not set"),
 
-            class: self.instruction.class,
+            class: self.instruction.class.expect("class is not set"),
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(

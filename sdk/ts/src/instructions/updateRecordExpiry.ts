@@ -137,7 +137,7 @@ export function updateRecordExpiry(
   // Keys and Signers.
   const [keys, signers] = getAccountMetasAndSigners(
     orderedAccounts,
-    'programId',
+    'omitted',
     programId
   );
 

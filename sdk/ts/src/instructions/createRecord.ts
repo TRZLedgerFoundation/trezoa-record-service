@@ -148,7 +148,7 @@ export function createRecord(
   // Keys and Signers.
   const [keys, signers] = getAccountMetasAndSigners(
     orderedAccounts,
-    'programId',
+    'omitted',
     programId
   );
 

@@ -19,10 +19,10 @@ pub struct FreezeTokenizedRecord {
     pub token_account: solana_program::pubkey::Pubkey,
     /// Record account associated with the tokenized record
     pub record: solana_program::pubkey::Pubkey,
+    /// Class account of the record
+    pub class: solana_program::pubkey::Pubkey,
     /// Token2022 Program used to freeze/unfreeze the tokenized record
     pub token2022: solana_program::pubkey::Pubkey,
-    /// Class account of the record
-    pub class: Option<solana_program::pubkey::Pubkey>,
 }
 
 impl FreezeTokenizedRecord {
@@ -56,19 +56,12 @@ impl FreezeTokenizedRecord {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.class, false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.token2022,
             false,
         ));
-        if let Some(class) = self.class {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                class, false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLANA_RECORD_SERVICE_ID,
-                false,
-            ));
-        }
         accounts.extend_from_slice(remaining_accounts);
         let mut data = borsh::to_vec(&FreezeTokenizedRecordInstructionData::new()).unwrap();
         let mut args = borsh::to_vec(&args).unwrap();
@@ -114,16 +107,16 @@ pub struct FreezeTokenizedRecordInstructionArgs {
 ///   1. `[]` mint
 ///   2. `[writable]` token_account
 ///   3. `[]` record
-///   4. `[optional]` token2022 (default to `TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb`)
-///   5. `[optional]` class
+///   4. `[]` class
+///   5. `[optional]` token2022 (default to `TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb`)
 #[derive(Clone, Debug, Default)]
 pub struct FreezeTokenizedRecordBuilder {
     authority: Option<solana_program::pubkey::Pubkey>,
     mint: Option<solana_program::pubkey::Pubkey>,
     token_account: Option<solana_program::pubkey::Pubkey>,
     record: Option<solana_program::pubkey::Pubkey>,
-    token2022: Option<solana_program::pubkey::Pubkey>,
     class: Option<solana_program::pubkey::Pubkey>,
+    token2022: Option<solana_program::pubkey::Pubkey>,
     is_frozen: Option<bool>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
@@ -156,18 +149,17 @@ impl FreezeTokenizedRecordBuilder {
         self.record = Some(record);
         self
     }
+    /// Class account of the record
+    #[inline(always)]
+    pub fn class(&mut self, class: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.class = Some(class);
+        self
+    }
     /// `[optional account, default to 'TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb']`
     /// Token2022 Program used to freeze/unfreeze the tokenized record
     #[inline(always)]
     pub fn token2022(&mut self, token2022: solana_program::pubkey::Pubkey) -> &mut Self {
         self.token2022 = Some(token2022);
-        self
-    }
-    /// `[optional account]`
-    /// Class account of the record
-    #[inline(always)]
-    pub fn class(&mut self, class: Option<solana_program::pubkey::Pubkey>) -> &mut Self {
-        self.class = class;
         self
     }
     #[inline(always)]
@@ -200,10 +192,10 @@ impl FreezeTokenizedRecordBuilder {
             mint: self.mint.expect("mint is not set"),
             token_account: self.token_account.expect("token_account is not set"),
             record: self.record.expect("record is not set"),
+            class: self.class.expect("class is not set"),
             token2022: self.token2022.unwrap_or(solana_program::pubkey!(
                 "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"
             )),
-            class: self.class,
         };
         let args = FreezeTokenizedRecordInstructionArgs {
             is_frozen: self.is_frozen.clone().expect("is_frozen is not set"),
@@ -223,10 +215,10 @@ pub struct FreezeTokenizedRecordCpiAccounts<'a, 'b> {
     pub token_account: &'b solana_program::account_info::AccountInfo<'a>,
     /// Record account associated with the tokenized record
     pub record: &'b solana_program::account_info::AccountInfo<'a>,
+    /// Class account of the record
+    pub class: &'b solana_program::account_info::AccountInfo<'a>,
     /// Token2022 Program used to freeze/unfreeze the tokenized record
     pub token2022: &'b solana_program::account_info::AccountInfo<'a>,
-    /// Class account of the record
-    pub class: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 }
 
 /// `freeze_tokenized_record` CPI instruction.
@@ -241,10 +233,10 @@ pub struct FreezeTokenizedRecordCpi<'a, 'b> {
     pub token_account: &'b solana_program::account_info::AccountInfo<'a>,
     /// Record account associated with the tokenized record
     pub record: &'b solana_program::account_info::AccountInfo<'a>,
+    /// Class account of the record
+    pub class: &'b solana_program::account_info::AccountInfo<'a>,
     /// Token2022 Program used to freeze/unfreeze the tokenized record
     pub token2022: &'b solana_program::account_info::AccountInfo<'a>,
-    /// Class account of the record
-    pub class: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The arguments for the instruction.
     pub __args: FreezeTokenizedRecordInstructionArgs,
 }
@@ -261,8 +253,8 @@ impl<'a, 'b> FreezeTokenizedRecordCpi<'a, 'b> {
             mint: accounts.mint,
             token_account: accounts.token_account,
             record: accounts.record,
-            token2022: accounts.token2022,
             class: accounts.class,
+            token2022: accounts.token2022,
             __args: args,
         }
     }
@@ -318,19 +310,13 @@ impl<'a, 'b> FreezeTokenizedRecordCpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.class.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.token2022.key,
             false,
         ));
-        if let Some(class) = self.class {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                *class.key, false,
-            ));
-        } else {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                crate::SOLANA_RECORD_SERVICE_ID,
-                false,
-            ));
-        }
         remaining_accounts.iter().for_each(|remaining_account| {
             accounts.push(solana_program::instruction::AccountMeta {
                 pubkey: *remaining_account.0.key,
@@ -353,10 +339,8 @@ impl<'a, 'b> FreezeTokenizedRecordCpi<'a, 'b> {
         account_infos.push(self.mint.clone());
         account_infos.push(self.token_account.clone());
         account_infos.push(self.record.clone());
+        account_infos.push(self.class.clone());
         account_infos.push(self.token2022.clone());
-        if let Some(class) = self.class {
-            account_infos.push(class.clone());
-        }
         remaining_accounts
             .iter()
             .for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
@@ -377,8 +361,8 @@ impl<'a, 'b> FreezeTokenizedRecordCpi<'a, 'b> {
 ///   1. `[]` mint
 ///   2. `[writable]` token_account
 ///   3. `[]` record
-///   4. `[]` token2022
-///   5. `[optional]` class
+///   4. `[]` class
+///   5. `[]` token2022
 #[derive(Clone, Debug)]
 pub struct FreezeTokenizedRecordCpiBuilder<'a, 'b> {
     instruction: Box<FreezeTokenizedRecordCpiBuilderInstruction<'a, 'b>>,
@@ -392,8 +376,8 @@ impl<'a, 'b> FreezeTokenizedRecordCpiBuilder<'a, 'b> {
             mint: None,
             token_account: None,
             record: None,
-            token2022: None,
             class: None,
+            token2022: None,
             is_frozen: None,
             __remaining_accounts: Vec::new(),
         });
@@ -432,6 +416,12 @@ impl<'a, 'b> FreezeTokenizedRecordCpiBuilder<'a, 'b> {
         self.instruction.record = Some(record);
         self
     }
+    /// Class account of the record
+    #[inline(always)]
+    pub fn class(&mut self, class: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+        self.instruction.class = Some(class);
+        self
+    }
     /// Token2022 Program used to freeze/unfreeze the tokenized record
     #[inline(always)]
     pub fn token2022(
@@ -439,16 +429,6 @@ impl<'a, 'b> FreezeTokenizedRecordCpiBuilder<'a, 'b> {
         token2022: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
         self.instruction.token2022 = Some(token2022);
-        self
-    }
-    /// `[optional account]`
-    /// Class account of the record
-    #[inline(always)]
-    pub fn class(
-        &mut self,
-        class: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    ) -> &mut Self {
-        self.instruction.class = class;
         self
     }
     #[inline(always)]
@@ -518,9 +498,9 @@ impl<'a, 'b> FreezeTokenizedRecordCpiBuilder<'a, 'b> {
 
             record: self.instruction.record.expect("record is not set"),
 
-            token2022: self.instruction.token2022.expect("token2022 is not set"),
+            class: self.instruction.class.expect("class is not set"),
 
-            class: self.instruction.class,
+            token2022: self.instruction.token2022.expect("token2022 is not set"),
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -537,8 +517,8 @@ struct FreezeTokenizedRecordCpiBuilderInstruction<'a, 'b> {
     mint: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     token_account: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    token2022: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     class: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    token2022: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     is_frozen: Option<bool>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(

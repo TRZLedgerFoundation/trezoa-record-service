@@ -216,9 +216,9 @@ impl<'info> MintTokenizedRecord<'info> {
 
     fn create_group_mint_account(&self, bump: &[u8; 1]) -> Result<(), ProgramError> {
         // Space of all our static extensions
-        let space = TOKEN_2022_MINT_LEN + TOKEN_2022_MINT_BASE_LEN + TOKEN_2022_GROUP_POINTER_LEN + TOKEN_2022_GROUP_LEN;
+        let space = TOKEN_2022_MINT_LEN + TOKEN_2022_MINT_BASE_LEN + TOKEN_2022_GROUP_POINTER_LEN;
 
-        let lamports = Rent::get()?.minimum_balance(space);
+        let lamports = Rent::get()?.minimum_balance(space + TOKEN_2022_GROUP_LEN);
 
         let seeds = [
             Seed::from(b"group"),
@@ -308,9 +308,7 @@ impl<'info> MintTokenizedRecord<'info> {
             + TOKEN_2022_PERMANENT_DELEGATE_LEN
             + TOKEN_2022_CLOSE_MINT_AUTHORITY_LEN
             + TOKEN_2022_METADATA_POINTER_LEN
-            + TOKEN_2022_METADATA_LEN
-            + TOKEN_2022_MEMBER_POINTER_LEN
-            + TOKEN_2022_MEMBER_LEN;
+            + TOKEN_2022_MEMBER_POINTER_LEN;
 
 
         // To avoid resizing the mint, we calculate the correct lamports for our token AOT with:
@@ -321,6 +319,8 @@ impl<'info> MintTokenizedRecord<'info> {
                 + unsafe {
                     Record::get_metadata_len_unchecked(&self.accounts.record.try_borrow_data()?)?
                 }
+                + TOKEN_2022_MEMBER_LEN
+                + TOKEN_2022_METADATA_LEN
         );
 
         let seeds = [

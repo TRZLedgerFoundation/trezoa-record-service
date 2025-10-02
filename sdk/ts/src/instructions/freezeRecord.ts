@@ -34,7 +34,7 @@ export type FreezeRecordInstructionAccounts = {
   /** Record account to be updated */
   record: PublicKey | Pda;
   /** Class account of the record */
-  class?: PublicKey | Pda;
+  class: PublicKey | Pda;
 };
 
 // Data.

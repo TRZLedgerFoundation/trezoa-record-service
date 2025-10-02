@@ -131,7 +131,7 @@ export function transferTokenizedRecord(
   // Keys and Signers.
   const [keys, signers] = getAccountMetasAndSigners(
     orderedAccounts,
-    'programId',
+    'omitted',
     programId
   );
 

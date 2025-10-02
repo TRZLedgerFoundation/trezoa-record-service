@@ -66,7 +66,7 @@ impl<'info> Class<'info> {
             .key()
             .ne(&data[AUTHORITY_OFFSET..AUTHORITY_OFFSET + size_of::<Pubkey>()])
         {
-            return Err(ProgramError::MissingRequiredSignature);
+            return Err(ProgramError::InvalidAccountData);
         }
 
         Ok(())

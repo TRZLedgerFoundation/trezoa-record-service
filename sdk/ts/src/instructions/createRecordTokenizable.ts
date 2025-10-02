@@ -154,7 +154,7 @@ export function createRecordTokenizable(
   // Keys and Signers.
   const [keys, signers] = getAccountMetasAndSigners(
     orderedAccounts,
-    'programId',
+    'omitted',
     programId
   );
 

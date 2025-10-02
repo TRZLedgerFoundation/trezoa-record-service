@@ -110,7 +110,7 @@ impl<'info> Record<'info> {
         let data = record.try_borrow_data()?;
 
         // Check if the Mint has been burned without passing through the BurnTokenizedRecord instruction
-        if data[OWNER_TYPE_OFFSET].ne(&(OwnerType::Token as u8)) {
+        if data[OWNER_TYPE_OFFSET].eq(&(OwnerType::Token as u8)) {
             let mint = mint.ok_or(ProgramError::InvalidAccountData)?;
 
             if mint.key().ne(&data[OWNER_OFFSET..OWNER_OFFSET + size_of::<Pubkey>()]) {

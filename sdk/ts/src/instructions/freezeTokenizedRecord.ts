@@ -37,10 +37,10 @@ export type FreezeTokenizedRecordInstructionAccounts = {
   tokenAccount: PublicKey | Pda;
   /** Record account associated with the tokenized record */
   record: PublicKey | Pda;
+  /** Class account of the record */
+  class: PublicKey | Pda;
   /** Token2022 Program used to freeze/unfreeze the tokenized record */
   token2022?: PublicKey | Pda;
-  /** Class account of the record */
-  class?: PublicKey | Pda;
 };
 
 // Data.
@@ -108,15 +108,15 @@ export function freezeTokenizedRecord(
       isWritable: false as boolean,
       value: input.record ?? null,
     },
-    token2022: {
+    class: {
       index: 4,
       isWritable: false as boolean,
-      value: input.token2022 ?? null,
+      value: input.class ?? null,
     },
-    class: {
+    token2022: {
       index: 5,
       isWritable: false as boolean,
-      value: input.class ?? null,
+      value: input.token2022 ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;
 
