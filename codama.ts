@@ -265,7 +265,6 @@ const root = rootNode(
                         docs: ["Optional authority for permissioned classes"]
                     }),
                 ],
-                optionalAccountStrategy: 'omitted',
             }),
             instructionNode({
                 name: "createRecordTokenizable",
@@ -276,7 +275,7 @@ const root = rootNode(
                     instructionArgumentNode({
                         name: 'discriminator',
                         type: numberTypeNode('u8'),
-                        defaultValue: numberValueNode(5),
+                        defaultValue: numberValueNode(4),
                         defaultValueStrategy: 'omitted',
                     }),
                     instructionArgumentNode({ 
@@ -325,7 +324,6 @@ const root = rootNode(
                         docs: ["Optional authority for permissioned classes"]
                     }),
                 ],
-                optionalAccountStrategy: 'omitted',
             }),
             instructionNode({
                 name: "updateRecord",
@@ -422,7 +420,6 @@ const root = rootNode(
                         docs: ["System Program used to extend our record account"]
                     }),
                 ],
-                optionalAccountStrategy: 'omitted',
             }),
             instructionNode({
                 name: "updateRecordExpiry",
@@ -458,21 +455,19 @@ const root = rootNode(
                         docs: ["Record account to be updated"]
                     }),
                     instructionAccountNode({
+                        name: "class",
+                        isSigner: false,
+                        isWritable: false,
+                        docs: ["Class account of the record"]
+                    }),
+                    instructionAccountNode({
                         name: "systemProgram",
                         defaultValue: publicKeyValueNode('11111111111111111111111111111111', 'systemProgram'),
                         isSigner: false,
                         isWritable: false,
                         docs: ["System Program used to extend our record account"]
                     }),
-                    instructionAccountNode({
-                        name: "class",
-                        isOptional: true,
-                        isSigner: false,
-                        isWritable: false,
-                        docs: ["Class account of the record"]
-                    }),
                 ],
-                optionalAccountStrategy: 'omitted',
             }),
             instructionNode({
                 name: "transferRecord",
@@ -509,7 +504,6 @@ const root = rootNode(
                         docs: ["Class account of the record"]
                     }),
                 ],
-                optionalAccountStrategy: 'omitted',
             }),
             instructionNode({
                 name: "deleteRecord",
@@ -551,6 +545,13 @@ const root = rootNode(
                         docs: ["Class account of the record"]
                     }),
                     instructionAccountNode({
+                        name: "token2022Program",
+                        isOptional: true,
+                        isSigner: false,
+                        isWritable: false,
+                        docs: ["Token2022 Program used to close the mint account"]
+                    }),
+                    instructionAccountNode({
                         name: "mint",
                         isOptional: true,
                         isSigner: false,
@@ -558,7 +559,6 @@ const root = rootNode(
                         docs: ["Mint account for the tokenized record"]
                     }),
                 ],
-                optionalAccountStrategy: 'omitted',
             }),
             instructionNode({
                 name: "freezeRecord",
@@ -793,7 +793,6 @@ const root = rootNode(
                         docs: ["Class account of the record"]
                     }),    
                 ],
-                optionalAccountStrategy: 'omitted',
             }),
             instructionNode({
                 name: "burnTokenizedRecord",
@@ -854,7 +853,6 @@ const root = rootNode(
                         docs: ["Class account of the record"]
                     }),    
                 ],
-                optionalAccountStrategy: 'omitted',
             })
         ],
         definedTypes: [

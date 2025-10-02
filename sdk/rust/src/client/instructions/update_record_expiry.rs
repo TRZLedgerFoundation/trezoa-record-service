@@ -17,10 +17,10 @@ pub struct UpdateRecordExpiry {
     pub payer: solana_program::pubkey::Pubkey,
     /// Record account to be updated
     pub record: solana_program::pubkey::Pubkey,
+    /// Class account of the record
+    pub class: solana_program::pubkey::Pubkey,
     /// System Program used to extend our record account
     pub system_program: solana_program::pubkey::Pubkey,
-    /// Class account of the record
-    pub class: Option<solana_program::pubkey::Pubkey>,
 }
 
 impl UpdateRecordExpiry {
@@ -50,14 +50,12 @@ impl UpdateRecordExpiry {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            self.class, false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.system_program,
             false,
         ));
-        if let Some(class) = self.class {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                class, false,
-            ));
-        }
         accounts.extend_from_slice(remaining_accounts);
         let mut data = borsh::to_vec(&UpdateRecordExpiryInstructionData::new()).unwrap();
         let mut args = borsh::to_vec(&args).unwrap();
@@ -102,15 +100,15 @@ pub struct UpdateRecordExpiryInstructionArgs {
 ///   0. `[writable, signer]` authority
 ///   1. `[writable, signer]` payer
 ///   2. `[writable]` record
-///   3. `[optional]` system_program (default to `11111111111111111111111111111111`)
-///   4. `[optional]` class
+///   3. `[]` class
+///   4. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
 pub struct UpdateRecordExpiryBuilder {
     authority: Option<solana_program::pubkey::Pubkey>,
     payer: Option<solana_program::pubkey::Pubkey>,
     record: Option<solana_program::pubkey::Pubkey>,
-    system_program: Option<solana_program::pubkey::Pubkey>,
     class: Option<solana_program::pubkey::Pubkey>,
+    system_program: Option<solana_program::pubkey::Pubkey>,
     expiry: Option<i64>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
@@ -137,18 +135,17 @@ impl UpdateRecordExpiryBuilder {
         self.record = Some(record);
         self
     }
+    /// Class account of the record
+    #[inline(always)]
+    pub fn class(&mut self, class: solana_program::pubkey::Pubkey) -> &mut Self {
+        self.class = Some(class);
+        self
+    }
     /// `[optional account, default to '11111111111111111111111111111111']`
     /// System Program used to extend our record account
     #[inline(always)]
     pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
         self.system_program = Some(system_program);
-        self
-    }
-    /// `[optional account]`
-    /// Class account of the record
-    #[inline(always)]
-    pub fn class(&mut self, class: Option<solana_program::pubkey::Pubkey>) -> &mut Self {
-        self.class = class;
         self
     }
     #[inline(always)]
@@ -180,10 +177,10 @@ impl UpdateRecordExpiryBuilder {
             authority: self.authority.expect("authority is not set"),
             payer: self.payer.expect("payer is not set"),
             record: self.record.expect("record is not set"),
+            class: self.class.expect("class is not set"),
             system_program: self
                 .system_program
                 .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
-            class: self.class,
         };
         let args = UpdateRecordExpiryInstructionArgs {
             expiry: self.expiry.clone().expect("expiry is not set"),
@@ -201,10 +198,10 @@ pub struct UpdateRecordExpiryCpiAccounts<'a, 'b> {
     pub payer: &'b solana_program::account_info::AccountInfo<'a>,
     /// Record account to be updated
     pub record: &'b solana_program::account_info::AccountInfo<'a>,
+    /// Class account of the record
+    pub class: &'b solana_program::account_info::AccountInfo<'a>,
     /// System Program used to extend our record account
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// Class account of the record
-    pub class: Option<&'b solana_program::account_info::AccountInfo<'a>>,
 }
 
 /// `update_record_expiry` CPI instruction.
@@ -217,10 +214,10 @@ pub struct UpdateRecordExpiryCpi<'a, 'b> {
     pub payer: &'b solana_program::account_info::AccountInfo<'a>,
     /// Record account to be updated
     pub record: &'b solana_program::account_info::AccountInfo<'a>,
+    /// Class account of the record
+    pub class: &'b solana_program::account_info::AccountInfo<'a>,
     /// System Program used to extend our record account
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// Class account of the record
-    pub class: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     /// The arguments for the instruction.
     pub __args: UpdateRecordExpiryInstructionArgs,
 }
@@ -236,8 +233,8 @@ impl<'a, 'b> UpdateRecordExpiryCpi<'a, 'b> {
             authority: accounts.authority,
             payer: accounts.payer,
             record: accounts.record,
-            system_program: accounts.system_program,
             class: accounts.class,
+            system_program: accounts.system_program,
             __args: args,
         }
     }
@@ -289,14 +286,13 @@ impl<'a, 'b> UpdateRecordExpiryCpi<'a, 'b> {
             false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+            *self.class.key,
+            false,
+        ));
+        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.system_program.key,
             false,
         ));
-        if let Some(class) = self.class {
-            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
-                *class.key, false,
-            ));
-        }
         remaining_accounts.iter().for_each(|remaining_account| {
             accounts.push(solana_program::instruction::AccountMeta {
                 pubkey: *remaining_account.0.key,
@@ -318,10 +314,8 @@ impl<'a, 'b> UpdateRecordExpiryCpi<'a, 'b> {
         account_infos.push(self.authority.clone());
         account_infos.push(self.payer.clone());
         account_infos.push(self.record.clone());
+        account_infos.push(self.class.clone());
         account_infos.push(self.system_program.clone());
-        if let Some(class) = self.class {
-            account_infos.push(class.clone());
-        }
         remaining_accounts
             .iter()
             .for_each(|remaining_account| account_infos.push(remaining_account.0.clone()));
@@ -341,8 +335,8 @@ impl<'a, 'b> UpdateRecordExpiryCpi<'a, 'b> {
 ///   0. `[writable, signer]` authority
 ///   1. `[writable, signer]` payer
 ///   2. `[writable]` record
-///   3. `[]` system_program
-///   4. `[optional]` class
+///   3. `[]` class
+///   4. `[]` system_program
 #[derive(Clone, Debug)]
 pub struct UpdateRecordExpiryCpiBuilder<'a, 'b> {
     instruction: Box<UpdateRecordExpiryCpiBuilderInstruction<'a, 'b>>,
@@ -355,8 +349,8 @@ impl<'a, 'b> UpdateRecordExpiryCpiBuilder<'a, 'b> {
             authority: None,
             payer: None,
             record: None,
-            system_program: None,
             class: None,
+            system_program: None,
             expiry: None,
             __remaining_accounts: Vec::new(),
         });
@@ -386,6 +380,12 @@ impl<'a, 'b> UpdateRecordExpiryCpiBuilder<'a, 'b> {
         self.instruction.record = Some(record);
         self
     }
+    /// Class account of the record
+    #[inline(always)]
+    pub fn class(&mut self, class: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
+        self.instruction.class = Some(class);
+        self
+    }
     /// System Program used to extend our record account
     #[inline(always)]
     pub fn system_program(
@@ -393,16 +393,6 @@ impl<'a, 'b> UpdateRecordExpiryCpiBuilder<'a, 'b> {
         system_program: &'b solana_program::account_info::AccountInfo<'a>,
     ) -> &mut Self {
         self.instruction.system_program = Some(system_program);
-        self
-    }
-    /// `[optional account]`
-    /// Class account of the record
-    #[inline(always)]
-    pub fn class(
-        &mut self,
-        class: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    ) -> &mut Self {
-        self.instruction.class = class;
         self
     }
     #[inline(always)]
@@ -463,12 +453,12 @@ impl<'a, 'b> UpdateRecordExpiryCpiBuilder<'a, 'b> {
 
             record: self.instruction.record.expect("record is not set"),
 
+            class: self.instruction.class.expect("class is not set"),
+
             system_program: self
                 .instruction
                 .system_program
                 .expect("system_program is not set"),
-
-            class: self.instruction.class,
             __args: args,
         };
         instruction.invoke_signed_with_remaining_accounts(
@@ -484,8 +474,8 @@ struct UpdateRecordExpiryCpiBuilderInstruction<'a, 'b> {
     authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     payer: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     class: Option<&'b solana_program::account_info::AccountInfo<'a>>,
+    system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     expiry: Option<i64>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(

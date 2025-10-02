@@ -65,6 +65,11 @@ impl TransferTokenizedRecord {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
                 class, false,
             ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::SOLANA_RECORD_SERVICE_ID,
+                false,
+            ));
         }
         accounts.extend_from_slice(remaining_accounts);
         let data = borsh::to_vec(&TransferTokenizedRecordInstructionData::new()).unwrap();
@@ -323,6 +328,11 @@ impl<'a, 'b> TransferTokenizedRecordCpi<'a, 'b> {
         if let Some(class) = self.class {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
                 *class.key, false,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::SOLANA_RECORD_SERVICE_ID,
+                false,
             ));
         }
         remaining_accounts.iter().for_each(|remaining_account| {

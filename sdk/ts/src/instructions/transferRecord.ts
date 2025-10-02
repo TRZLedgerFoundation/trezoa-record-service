@@ -112,7 +112,7 @@ export function transferRecord(
   // Keys and Signers.
   const [keys, signers] = getAccountMetasAndSigners(
     orderedAccounts,
-    'omitted',
+    'programId',
     programId
   );
 

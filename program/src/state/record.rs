@@ -128,7 +128,6 @@ impl<'info> Record<'info> {
                 .1,
             ];
 
-
             let seeds = [
                 Seed::from(b"mint"),
                 Seed::from(record.key()),

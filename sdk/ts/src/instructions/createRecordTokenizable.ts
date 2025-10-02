@@ -77,7 +77,7 @@ export function getCreateRecordTokenizableInstructionDataSerializer(): Serialize
       ],
       { description: 'CreateRecordTokenizableInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 5 })
+    (value) => ({ ...value, discriminator: 4 })
   ) as Serializer<
     CreateRecordTokenizableInstructionDataArgs,
     CreateRecordTokenizableInstructionData
@@ -154,7 +154,7 @@ export function createRecordTokenizable(
   // Keys and Signers.
   const [keys, signers] = getAccountMetasAndSigners(
     orderedAccounts,
-    'omitted',
+    'programId',
     programId
   );
 

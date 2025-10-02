@@ -17,7 +17,8 @@ use pinocchio::{account_info::AccountInfo, program_error::ProgramError, ProgramR
 /// 2. `payer` - The account that will get refunded for the record account
 /// 3. `record` - The record account to be deleted
 /// 4. `class` - [optional] The class of the record to be deleted
-/// 5. `mint` - [optional] The mint of the record to be deleted
+/// 5. `token2022_program` - [optional] The token2022 program to be used to close the mint account
+/// 6. `mint` - [optional] The mint of the record to be deleted
 ///
 /// # Security
 /// 1. The authority must be either:

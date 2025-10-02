@@ -341,6 +341,15 @@ const MINT_DATA_WITH_EXTENSIONS: &[u8] = &[
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 1,
 ];
+const MINT_DATA_WITH_EXTENSIONS_AND_NO_SUPPLY: &[u8] = &[
+    1, 0, 0, 0, 44, 183, 51, 50, 60, 76, 5, 80, 101, 31, 190, 147, 58, 233, 60, 212, 133, 19, 33,
+    142, 101, 42, 77, 206, 214, 6, 73, 4, 96, 81, 27, 127, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0,
+    0, 44, 183, 51, 50, 60, 76, 5, 80, 101, 31, 190, 147, 58, 233, 60, 212, 133, 19, 33, 142, 101,
+    42, 77, 206, 214, 6, 73, 4, 96, 81, 27, 127, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 1,
+];
 const MINT_CLOSE_AUTHORITY_EXTENSION: &[u8] = &[
     3, 0, 32, 0, 44, 183, 51, 50, 60, 76, 5, 80, 101, 31, 190, 147, 58, 233, 60, 212, 133, 19, 33,
     142, 101, 42, 77, 206, 214, 6, 73, 4, 96, 81, 27, 127,
@@ -1279,6 +1288,57 @@ fn update_record_with_delegate_incorrect_authority() {
 }
 
 #[test]
+fn update_class_expiry() {
+    // Authority
+    let (authority, authority_data) = keyed_account_for_authority();
+    // Payer
+    let (payer, payer_data) = keyed_account_for_random_authority();
+    // Class
+    let (class, class_data) = keyed_account_for_class(AUTHORITY, true, false, "test", "test");
+    // Record
+    let (record, record_data) =
+        keyed_account_for_record(class, 0, OWNER, false, 0, b"test", b"test");
+    //System Program
+    let (system_program, system_program_data) = keyed_account_for_system_program();
+
+    let instruction = UpdateRecordExpiry {
+        authority,
+        payer,
+        record,
+        class,
+        system_program,
+    }
+    .instruction(UpdateRecordExpiryInstructionArgs {
+        expiry: 1000,
+    });
+
+    let mollusk = Mollusk::new(
+        &SOLANA_RECORD_SERVICE_ID,
+        "../target/deploy/solana_record_service",
+    );
+
+    // Record updated
+    let (_, record_data_updated) = keyed_account_for_record(class, 0, OWNER, false, 1000, b"test", b"test");
+
+    mollusk.process_and_validate_instruction(
+        &instruction,
+        &[
+            (authority, authority_data),
+            (payer, payer_data),
+            (record, record_data),
+            (system_program, system_program_data),
+            (class, class_data),
+        ],
+        &[
+            Check::success(),
+            Check::account(&record)
+                .data(&record_data_updated.data)
+                .build(),
+        ],
+    );
+}
+
+#[test]
 fn transfer_record() {
     // Owner
     let (owner, owner_data) = keyed_account_for_owner();
@@ -1409,6 +1469,7 @@ fn delete_record() {
         payer,
         record,
         class: None,
+        token2022_program: None,
         mint: None,
     }
     .instruction();
@@ -1449,6 +1510,7 @@ fn delete_record_with_delegate() {
         payer,
         record,
         class: Some(class),
+        token2022_program: None,
         mint: None,
     }
     .instruction();
@@ -1469,6 +1531,58 @@ fn delete_record_with_delegate() {
         &[
             Check::success(),
             Check::account(&record).data(&[0xff]).build(),
+        ],
+    );
+}
+
+#[test]
+fn delete_tokenized_record_with_no_supply() {
+    // Owner
+    let (owner, owner_data) = keyed_account_for_owner();
+    // Class
+    let (class, _) = keyed_account_for_class_default();
+    // Mint
+    let (record, _bump) = Pubkey::find_program_address(
+        &[b"record", &class.as_ref(), b"test"],
+        &SOLANA_RECORD_SERVICE_ID,
+    );
+    let (mint, mut mint_data) = keyed_account_for_mint(record);
+    mint_data.data_as_mut_slice()[..MINT_DATA_WITH_EXTENSIONS_AND_NO_SUPPLY.len()].copy_from_slice(MINT_DATA_WITH_EXTENSIONS_AND_NO_SUPPLY);
+    // Record
+    let (_, record_data) =
+        keyed_account_for_record(class, 1, mint, false, 0, b"test", b"test");
+    // Token2022 Program
+    let (token2022_program, token2022_program_data) = mollusk_svm_programs_token::token2022::keyed_account();
+   
+    let instruction = DeleteRecord {
+        authority: owner,
+        payer: owner,
+        record,
+        class: None,
+        token2022_program: Some(token2022_program),
+        mint: Some(mint),
+    }
+    .instruction();
+
+    let mut mollusk = Mollusk::new(
+        &SOLANA_RECORD_SERVICE_ID,
+        "../target/deploy/solana_record_service",
+    );
+
+    mollusk_svm_programs_token::token2022::add_program(&mut mollusk);
+
+    mollusk.process_and_validate_instruction(
+        &instruction,
+        &[
+            (owner, owner_data),
+            (record, record_data),
+            (mint, mint_data),
+            (token2022_program, token2022_program_data),
+        ],
+        &[
+            Check::success(),
+            Check::account(&record).data(&[0xff]).build(),
+            Check::account(&mint).data(&[]).build(),
         ],
     );
 }

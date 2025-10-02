@@ -36,6 +36,8 @@ export type DeleteRecordInstructionAccounts = {
   record: PublicKey | Pda;
   /** Class account of the record */
   class?: PublicKey | Pda;
+  /** Token2022 Program used to close the mint account */
+  token2022Program?: PublicKey | Pda;
   /** Mint account for the tokenized record */
   mint?: PublicKey | Pda;
 };
@@ -94,7 +96,12 @@ export function deleteRecord(
       isWritable: false as boolean,
       value: input.class ?? null,
     },
-    mint: { index: 4, isWritable: true as boolean, value: input.mint ?? null },
+    token2022Program: {
+      index: 4,
+      isWritable: false as boolean,
+      value: input.token2022Program ?? null,
+    },
+    mint: { index: 5, isWritable: true as boolean, value: input.mint ?? null },
   } satisfies ResolvedAccountsWithIndices;
 
   // Accounts in order.
@@ -105,7 +112,7 @@ export function deleteRecord(
   // Keys and Signers.
   const [keys, signers] = getAccountMetasAndSigners(
     orderedAccounts,
-    'omitted',
+    'programId',
     programId
   );
 

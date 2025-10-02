@@ -63,6 +63,11 @@ impl CreateRecord {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
                 authority, true,
             ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::SOLANA_RECORD_SERVICE_ID,
+                false,
+            ));
         }
         accounts.extend_from_slice(remaining_accounts);
         let mut data = borsh::to_vec(&CreateRecordInstructionData::new()).unwrap();
@@ -336,6 +341,11 @@ impl<'a, 'b> CreateRecordCpi<'a, 'b> {
             accounts.push(solana_program::instruction::AccountMeta::new_readonly(
                 *authority.key,
                 true,
+            ));
+        } else {
+            accounts.push(solana_program::instruction::AccountMeta::new_readonly(
+                crate::SOLANA_RECORD_SERVICE_ID,
+                false,
             ));
         }
         remaining_accounts.iter().for_each(|remaining_account| {
