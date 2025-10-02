@@ -500,7 +500,7 @@ fn keyed_account_for_updated_mint(record: Pubkey) -> (Pubkey, Account) {
     (address, record_mint_account)
 }
 
-const MINT_METADATA_EXTENSIONE_WITH_ADDITIONAL_METADATA: &[u8; 111] = &[
+const MINT_METADATA_EXTENSION_WITH_ADDITIONAL_METADATA: &[u8; 111] = &[
     19, 0, 107, 0, 44, 183, 51, 50, 60, 76, 5, 80, 101, 31, 190, 147, 58, 233, 60, 212, 133, 19,
     33, 142, 101, 42, 77, 206, 214, 6, 73, 4, 96, 81, 27, 127, 44, 183, 51, 50, 60, 76, 5, 80, 101,
     31, 190, 147, 58, 233, 60, 212, 133, 19, 33, 142, 101, 42, 77, 206, 214, 6, 73, 4, 96, 81, 27,
@@ -517,7 +517,7 @@ fn keyed_account_for_mint_with_additional_metadata(record: Pubkey) -> (Pubkey, A
         + MINT_PERMANENT_DELEGATE_EXTENSION.len()
         + MINT_METADATA_POINTER_EXTENSION.len()
         + MINT_GROUP_MEMBER_POINTER_EXTENSION.len()
-        + MINT_METADATA_EXTENSIONE_WITH_ADDITIONAL_METADATA.len()
+        + MINT_METADATA_EXTENSION_WITH_ADDITIONAL_METADATA.len()
         + MINT_GROUP_MEMBER_EXTENSION.len();
 
     let mut mint_account_data = vec![0u8; total_size];
@@ -543,9 +543,9 @@ fn keyed_account_for_mint_with_additional_metadata(record: Pubkey) -> (Pubkey, A
         .copy_from_slice(MINT_GROUP_MEMBER_POINTER_EXTENSION);
     offset += MINT_GROUP_MEMBER_POINTER_EXTENSION.len();
     // Metadata Extension
-    mint_account_data[offset..offset + MINT_METADATA_EXTENSIONE_WITH_ADDITIONAL_METADATA.len()]
-        .copy_from_slice(MINT_METADATA_EXTENSIONE_WITH_ADDITIONAL_METADATA);
-    offset += MINT_METADATA_EXTENSIONE_WITH_ADDITIONAL_METADATA.len();
+    mint_account_data[offset..offset + MINT_METADATA_EXTENSION_WITH_ADDITIONAL_METADATA.len()]
+        .copy_from_slice(MINT_METADATA_EXTENSION_WITH_ADDITIONAL_METADATA);
+    offset += MINT_METADATA_EXTENSION_WITH_ADDITIONAL_METADATA.len();
     // Group Extension
     mint_account_data[offset..offset + MINT_GROUP_MEMBER_EXTENSION.len()]
         .copy_from_slice(MINT_GROUP_MEMBER_EXTENSION);

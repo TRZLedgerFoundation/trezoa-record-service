@@ -13,7 +13,7 @@ use crate::{
     utils::{write_bytes, UNINIT_BYTE},
 };
 
-/// Initializes a Mint Close Authority.
+/// Initializes a Permanent Delegate.
 ///
 /// ### Accounts:
 ///   0. `[WRITE]`  The mint account to initialize a permanent delegate for.

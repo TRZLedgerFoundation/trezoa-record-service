@@ -22,7 +22,7 @@ use pinocchio::{
 ///
 /// # Accounts
 /// 1. `authority` - The account that has permission to burn the record token (must be a signer)
-/// 2. `payer` - The account that will pay for the record account
+/// 2. `payer` - The account that will get refunded for the record account
 /// 2. `mint` - The mint account of the record token
 /// 3. `token_account` - The token account of the record token
 /// 4. `record` - The record account to be deleted

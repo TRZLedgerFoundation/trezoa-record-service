@@ -23,7 +23,7 @@ use pinocchio::{
 };
 use pinocchio_system::instructions::{Allocate, Assign, CreateAccount, Transfer};
 
-/// MintRecordToken instruction.
+/// MintTokenizedRecord instruction.
 ///
 /// This instruction:
 /// 1. Validates the authority and record
@@ -40,8 +40,8 @@ use pinocchio_system::instructions::{Allocate, Assign, CreateAccount, Transfer};
 /// 5. `mint` - The mint account of the record token
 /// 6. `class` - The class of the record
 /// 7. `group` - The group of the record
-/// 8. `tokenAccount` - The token account where we mint the record token to
-/// 9. `token2022` - The Token2022 program
+/// 8. `token_account` - The associated token account where we mint the record token to
+/// 9. `token_2022_program` - The Token2022 program
 /// 10. `system_program` - Required for initializing our accounts
 ///
 /// # Security
@@ -228,7 +228,6 @@ impl<'info> MintTokenizedRecord<'info> {
 
         let signers = [Signer::from(&seeds)];
 
-        // Create the account with our program as owner
         if self.accounts.group.lamports() > 0 {
             Allocate {
                 account: self.accounts.group,

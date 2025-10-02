@@ -12,17 +12,13 @@ use crate::{
     utils::{write_bytes, UNINIT_BYTE},
 };
 
-/// Initializes a Mint Close Authority.
+/// Transfers tokens between accounts.
 ///
 /// ### Accounts:
-///  0. `[writable]` The source account.
+///  0. `[WRITE]` The source account.
 ///  1. `[]` The token mint.
-///  2. `[writable]` The destination account.
-///  3. `[signer]` The source account's owner/delegate.
-///
-/// ### Data:
-///  0. amount (u64)
-///  1. decimals (u8)
+///  2. `[WRITE]` The destination account.
+///  3. `[SIGNER]` The source account's owner/delegate.
 pub struct TransferChecked<'a> {
     /// Mint Account.
     pub source: &'a AccountInfo,

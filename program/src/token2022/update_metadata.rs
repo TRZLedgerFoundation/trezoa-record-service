@@ -13,14 +13,13 @@ use crate::{
     utils::{write_bytes, UNINIT_BYTE},
 };
 
-/// Accounts expected by this instruction:
+/// Updates the metadata for a Token-2022 mint.
 ///
-/// 0. `[w]` Metadata account
-/// 1. `[s]` Update authority
+/// ### Accounts:
+/// 0. `[WRITE]` Metadata account
+/// 1. `[SIGNER]` Update authority
 ///
-/// Data expected by this instruction:
-///
-/// 0. `UpdateField`
+/// ### Data: 0. `UpdateField`
 ///
 /// pub struct UpdateField {
 ///    /// Field to update in the metadata (0 = Name, 1 = Symbol, 2 = Uri, 3 = Key(String))
@@ -59,8 +58,8 @@ impl UpdateMetadata<'_> {
         // instruction data
         // - [0]: instruction discriminator (8 bytes, [u8;8])
         // - [8]: field (u8)
-        // - [9..13]: new_uri length (u32)
-        // - [13..13+new_uri.len()]: new_uri bytes
+        // - [9..13]: additional metadata length (u32)
+        // - [13..13+additional_metadata.len()]: additional metadata bytes
         let instruction_data_size = Self::DISCRIMINATOR.len() + size_of::<u8>() + self.additional_metadata.len();
         let mut instruction_data = [UNINIT_BYTE; 2_000];
 
@@ -72,7 +71,7 @@ impl UpdateMetadata<'_> {
         // Write field at offset [8]
         write_bytes(&mut instruction_data[FIELD_OFFSET..], &[3]);
 
-        // Write new_uri length at offset [9..13]
+        // Write additional metadata length at offset [9..13]
         write_bytes(
             &mut instruction_data[ADDITIONAL_METADATA_LENGTH_OFFSET..],
             self.additional_metadata,

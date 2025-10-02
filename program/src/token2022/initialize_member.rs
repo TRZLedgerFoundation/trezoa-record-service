@@ -12,10 +12,14 @@ use crate::{
     utils::{write_bytes, UNINIT_BYTE},
 };
 
-/// Initializes a Mint Close Authority.
+/// Initializes a Member.
 ///
 /// ### Accounts:
-///   0. `[WRITE]`  The mint account to initialize a close authority for.
+///   0. `[WRITE]`  The mint account to initialize a member for.
+///   1. `[]` The member account.
+///   2. `[SIGNER]` The mint authority account.
+///   3. `[WRITE]` The group account.
+///   4. `[SIGNER]` The group update authority account.
 pub struct InitializeMember<'a> {
     /// Mint Account.
     pub mint: &'a AccountInfo,

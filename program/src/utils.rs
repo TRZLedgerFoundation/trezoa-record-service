@@ -20,7 +20,7 @@ pub struct Context<'info> {
 ///
 /// # Arguments
 /// * `target_account` - The account to resize
-/// * `authority` - The authority account that will receive excess lamports or provide additional lamports
+/// * `payer` - The account that will receive excess lamports or provide additional lamports
 /// * `new_size` - The new size for the account
 /// * `zero_out` - Whether to zero out the new space (true if shrinking, false if expanding)
 pub fn resize_account(
@@ -56,7 +56,7 @@ pub fn resize_account(
             .invoke()?;
         }
         core::cmp::Ordering::Less => {
-            // Can return excess lamports to authority
+            // Can return excess lamports to payer
             let lamports_diff = target_account
                 .lamports()
                 .saturating_sub(new_minimum_balance);

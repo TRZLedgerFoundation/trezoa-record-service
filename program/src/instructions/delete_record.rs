@@ -14,7 +14,7 @@ use pinocchio::{account_info::AccountInfo, program_error::ProgramError, ProgramR
 ///
 /// # Accounts
 /// 1. `authority` - The account that has permission to delete the record (must be a signer)
-/// 2. `payer` - The account that will pay for the record account
+/// 2. `payer` - The account that will get refunded for the record account
 /// 3. `record` - The record account to be deleted
 /// 4. `class` - [optional] The class of the record to be deleted
 /// 5. `mint` - [optional] The mint of the record to be deleted

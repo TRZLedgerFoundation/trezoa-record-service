@@ -66,7 +66,7 @@ impl<'info> TryFrom<&'info [AccountInfo]> for CreateRecordAccounts<'info> {
 }
 
 const EXPIRY_OFFSET: usize = 0;
-const NAME_LEN_OFFSET: usize = EXPIRY_OFFSET + size_of::<i64>();
+const SEED_LEN_OFFSET: usize = EXPIRY_OFFSET + size_of::<i64>();
 
 pub struct CreateRecord<'info> {
     accounts: CreateRecordAccounts<'info>,
@@ -96,9 +96,9 @@ impl<'info> TryFrom<Context<'info>> for CreateRecord<'info> {
 
         // Deserialize variable length data
         let mut variable_data: ByteReader<'info> =
-            ByteReader::new_with_offset(ctx.data, NAME_LEN_OFFSET);
+            ByteReader::new_with_offset(ctx.data, SEED_LEN_OFFSET);
 
-        // Deserialize `name`
+        // Deserialize `seed`
         let seed: &[u8] = variable_data.read_bytes_with_length()?;
 
         #[cfg(not(feature = "perf"))]
