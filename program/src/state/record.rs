@@ -262,7 +262,7 @@ impl<'info> Record<'info> {
         }
 
         // Validate the delegate
-        let class = class.ok_or(ProgramError::MissingRequiredSignature)?;
+        let class = class.ok_or(ProgramError::InvalidAccountData)?;
         if class.key().ne(&record_data[CLASS_OFFSET..CLASS_OFFSET + size_of::<Pubkey>()]) {
             return Err(ProgramError::InvalidAccountData);
         }
