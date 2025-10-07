@@ -1,6 +1,6 @@
 use crate::{
     state::{OwnerType, Record},
-    token2022::{BurnChecked, CloseAccount, Token},
+    token2022::{BurnChecked, CloseAccount, ThawAccount, Token},
     utils::Context,
 };
 #[cfg(not(feature = "perf"))]
@@ -105,6 +105,19 @@ impl<'info> BurnTokenizedRecord<'info> {
 
         let signers = [Signer::from(&seeds)];
 
+        let is_frozen = unsafe {
+            Token::get_is_frozen_unchecked(&self.accounts.token_account.try_borrow_data()?)?
+        };
+
+        if is_frozen {
+            ThawAccount {
+                mint: self.accounts.mint,
+                account: self.accounts.token_account,
+                freeze_authority: self.accounts.mint,
+            }
+            .invoke_signed(&signers)?;
+        }
+
         // Burn the mint
         BurnChecked {
             mint: self.accounts.mint,
@@ -126,10 +139,6 @@ impl<'info> BurnTokenizedRecord<'info> {
         // Set the record owner, to the owner of the token account and the owner type to pubkey
         let record_owner =
             unsafe { Token::get_owner_unchecked(&self.accounts.token_account.try_borrow_data()?)? };
-
-        let is_frozen = unsafe {
-            Token::get_is_frozen_unchecked(&self.accounts.token_account.try_borrow_data()?)?
-        };
 
         unsafe {
             Record::update_is_frozen_unchecked(
