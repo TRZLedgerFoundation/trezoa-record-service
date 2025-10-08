@@ -127,7 +127,7 @@ impl<'info> CreateRecord<'info> {
     }
 
     pub fn execute(&self) -> ProgramResult {
-        let space = Record::MINIMUM_CLASS_SIZE + self.seed.len() + self.data.len();
+        let space = Record::MINIMUM_RECORD_SIZE + self.seed.len() + self.data.len();
         let rent = Rent::get()?.minimum_balance(space);
         let lamports = rent.saturating_sub(self.accounts.record.lamports());
 

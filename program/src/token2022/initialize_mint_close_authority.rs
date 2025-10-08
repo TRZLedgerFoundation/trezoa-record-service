@@ -20,32 +20,39 @@ use crate::{
 pub struct InitializeMintCloseAuthority<'a> {
     /// Mint Account.
     pub mint: &'a AccountInfo,
-    pub close_authority: &'a Pubkey,
+    pub close_authority: &'a Pubkey, // This is an optional parameter
 }
 
 impl InitializeMintCloseAuthority<'_> {
-    const DISCRIMINATOR: u8 = 0x19;
-
     #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
         self.invoke_signed(&[])
     }
 
     const DISCRIMINATOR_OFFSET: usize = 0;
-    const CLOSE_AUTHORITY_OFFSET: usize = Self::DISCRIMINATOR_OFFSET + size_of::<u16>();
+    const OPTIONAL_CLOSE_AUTHORITY_OFFSET: usize = Self::DISCRIMINATOR_OFFSET + size_of::<u8>();
+    const CLOSE_AUTHORITY_OFFSET: usize = Self::OPTIONAL_CLOSE_AUTHORITY_OFFSET + size_of::<u8>();
 
     pub fn invoke_signed(&self, signers: &[Signer]) -> ProgramResult {
+        const DISCRIMINATOR: u8 = 0x19;
+
         // Account metadata
         let account_metas: [AccountMeta; 1] = [AccountMeta::writable(self.mint.key())];
 
         // instruction data
         // -  [0]: instruction discriminator (1 byte, u8)
-        // -  [1..33]: closeAuthority (32 bytes, Pubkey)
+        // -  [1]: optional close authority presence flag (1 byte, u8)
+        // -  [2..34]: closeAuthority (32 bytes, Pubkey)
         let mut instruction_data = [UNINIT_BYTE; 34];
 
         write_bytes(
             &mut instruction_data[Self::DISCRIMINATOR_OFFSET..],
-            &[Self::DISCRIMINATOR, 1],
+            &[DISCRIMINATOR],
+        );
+
+        write_bytes(
+            &mut instruction_data[Self::OPTIONAL_CLOSE_AUTHORITY_OFFSET..],
+            &[1],
         );
 
         write_bytes(

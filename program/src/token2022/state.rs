@@ -1,8 +1,9 @@
-use crate::token2022::constants::{TOKEN_2022_PROGRAM_ID, TOKEN_IS_FROZEN_FLAG};
+use crate::token2022::constants::TOKEN_2022_PROGRAM_ID;
 use core::mem::size_of;
 use pinocchio::{account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey};
 
 const TOKEN_2022_ACCOUNT_DISCRIMINATOR_OFFSET: usize = 165;
+const TOKEN_IS_FROZEN_FLAG: u8 = 2;
 const MINT_DISCRIMINATOR: u8 = 0x01;
 const TOKEN_ACCOUNT_DISCRIMINATOR: u8 = 0x02;
 const TOKEN_ACCOUNT_SUPPLY_OFFSET: usize = 36;

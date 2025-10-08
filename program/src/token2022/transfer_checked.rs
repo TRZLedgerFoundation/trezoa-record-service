@@ -34,14 +34,14 @@ const AMOUNT_OFFSET: usize = DISCRIMINATOR_OFFSET + size_of::<u8>();
 const DECIMALS_OFFSET: usize = AMOUNT_OFFSET + size_of::<u64>();
 
 impl TransferChecked<'_> {
-    const DISCRIMINATOR: u8 = 0x0c;
-
     #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
         self.invoke_signed(&[])
     }
 
     pub fn invoke_signed(&self, signers: &[Signer]) -> ProgramResult {
+        const DISCRIMINATOR: u8 = 0x0c;
+
         // Account metadata
         let account_metas: [AccountMeta; 4] = [
             AccountMeta::writable(self.source.key()),
@@ -58,7 +58,7 @@ impl TransferChecked<'_> {
 
         write_bytes(
             &mut instruction_data[DISCRIMINATOR_OFFSET..],
-            &[Self::DISCRIMINATOR],
+            &[DISCRIMINATOR],
         );
 
         write_bytes(

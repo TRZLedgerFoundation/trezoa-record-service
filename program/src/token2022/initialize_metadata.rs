@@ -34,17 +34,16 @@ pub struct InitializeMetadata<'a> {
 }
 
 impl InitializeMetadata<'_> {
-    pub const DISCRIMINATOR: [u8; 8] = [0xd2, 0xe1, 0x1e, 0xa2, 0x58, 0xb8, 0x4d, 0x8d];
-
     #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
         self.invoke_signed(&[])
     }
 
     const DISCRIMINATOR_OFFSET: usize = 0;
-    const METADATA_DATA_OFFSET: usize = Self::DISCRIMINATOR_OFFSET + size_of::<u64>();
+    const METADATA_DATA_OFFSET: usize = Self::DISCRIMINATOR_OFFSET + size_of::<[u8; 8]>();
 
     pub fn invoke_signed(&self, signers: &[Signer]) -> ProgramResult {
+        const INITIALIZE_METADATA_DISCRIMINATOR: [u8; 8] = [0xd2, 0xe1, 0x1e, 0xa2, 0x58, 0xb8, 0x4d, 0x8d];
         // Account metadata - Token-2022 metadata initialization expects:
         // 0. mint (writable)
         // 1. update_authority (readonly)
@@ -60,12 +59,12 @@ impl InitializeMetadata<'_> {
         // instruction data
         // - [0]: instruction discriminator (8 bytes, [u8;8])
         // - [8..]: metadata data
-        let instruction_data_size = Self::DISCRIMINATOR.len() + self.metadata_data.len();
+        let instruction_data_size = INITIALIZE_METADATA_DISCRIMINATOR.len() + self.metadata_data.len();
         let mut instruction_data = [UNINIT_BYTE; 2_000];
 
         write_bytes(
             &mut instruction_data[Self::DISCRIMINATOR_OFFSET..],
-            &Self::DISCRIMINATOR,
+            &INITIALIZE_METADATA_DISCRIMINATOR,
         );
 
         write_bytes(

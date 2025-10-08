@@ -34,8 +34,6 @@ pub struct InitializeGroup<'a> {
 }
 
 impl InitializeGroup<'_> {
-    pub const DISCRIMINATOR: [u8; 8] = [0x79, 0x71, 0x6c, 0x27, 0x36, 0x33, 0x00, 0x04];
-
     #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
         self.invoke_signed(&[])
@@ -46,6 +44,8 @@ impl InitializeGroup<'_> {
     const MAX_SIZE_OFFSET: usize = Self::UPDATE_AUTHORITY_OFFSET + size_of::<Pubkey>();
 
     pub fn invoke_signed(&self, signers: &[Signer]) -> ProgramResult {
+        const INITIALIZE_GROUP_DISCRIMINATOR: [u8; 8] = [0x79, 0x71, 0x6c, 0x27, 0x36, 0x33, 0x00, 0x04];
+
         // Account metadata
         let account_metas: [AccountMeta; 3] = [
             AccountMeta::writable(self.group.key()),
@@ -61,7 +61,7 @@ impl InitializeGroup<'_> {
 
         write_bytes(
             &mut instruction_data[Self::DISCRIMINATOR_OFFSET..],
-            &Self::DISCRIMINATOR,
+            &INITIALIZE_GROUP_DISCRIMINATOR,
         );
 
         write_bytes(

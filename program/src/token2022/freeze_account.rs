@@ -23,14 +23,14 @@ pub struct FreezeAccount<'a> {
 }
 
 impl FreezeAccount<'_> {
-    const DISCRIMINATOR: u8 = 0x0A;
-
     #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
         self.invoke_signed(&[])
     }
 
     pub fn invoke_signed(&self, signers: &[Signer]) -> ProgramResult {
+        const DISCRIMINATOR: u8 = 0x0A;
+
         // account metadata
         let account_metas: [AccountMeta; 3] = [
             AccountMeta::writable(self.account.key()),
@@ -41,7 +41,7 @@ impl FreezeAccount<'_> {
         let instruction = Instruction {
             program_id: &TOKEN_2022_PROGRAM_ID,
             accounts: &account_metas,
-            data: &[Self::DISCRIMINATOR],
+            data: &[DISCRIMINATOR],
         };
 
         invoke_signed(

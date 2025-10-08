@@ -43,8 +43,8 @@ pub use freeze_account::*;
 pub mod thaw_account;
 pub use thaw_account::*;
 
-pub mod burn;
-pub use burn::*;
+pub mod burn_checked;
+pub use burn_checked::*;
 
 pub mod state;
 pub use state::*;

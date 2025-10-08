@@ -32,8 +32,6 @@ pub struct BurnChecked<'a> {
 }
 
 impl BurnChecked<'_> {
-    const DISCRIMINATOR: u8 = 0x0f;
-
     #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
         self.invoke_signed(&[])
@@ -44,6 +42,8 @@ impl BurnChecked<'_> {
     const DECIMALS_OFFSET: usize = Self::AMOUNT_OFFSET + size_of::<u64>();
 
     pub fn invoke_signed(&self, signers: &[Signer]) -> ProgramResult {
+        const DISCRIMINATOR: u8 = 0x0f;
+        
         // Account metadata
         let account_metas: [AccountMeta; 3] = [
             AccountMeta::writable(self.account.key()),
@@ -59,7 +59,7 @@ impl BurnChecked<'_> {
 
         write_bytes(
             &mut instruction_data[Self::DISCRIMINATOR_OFFSET..],
-            &[Self::DISCRIMINATOR],
+            &[DISCRIMINATOR],
         );
 
         write_bytes(

@@ -1,6 +1,5 @@
 use crate::{
-    token2022::{CloseAccount, Mint, Token},
-    utils::{resize_account, ByteWriter},
+    constants::CLOSED_ACCOUNT_DISCRIMINATOR, token2022::{CloseAccount, Mint, Token}, utils::{resize_account, ByteWriter}
 };
 use core::{mem::size_of, str};
 use pinocchio::{
@@ -51,7 +50,7 @@ impl<'info> Record<'info> {
     pub const DISCRIMINATOR: u8 = 2;
 
     /// Minimum size required for a valid record account
-    pub const MINIMUM_CLASS_SIZE: usize = size_of::<u8>()
+    pub const MINIMUM_RECORD_SIZE: usize = size_of::<u8>()
         + size_of::<Pubkey>()
         + size_of::<u8>()
         + size_of::<Pubkey>()
@@ -357,7 +356,7 @@ impl<'info> Record<'info> {
     /// This function does not perform owner checks
     pub unsafe fn update_data_unchecked(
         record: &'info AccountInfo,
-        authority: &'info AccountInfo,
+        payer: &'info AccountInfo,
         data: &'info str,
     ) -> Result<(), ProgramError> {
         let seed_len = {
@@ -370,7 +369,7 @@ impl<'info> Record<'info> {
         let new_len = offset + data.len();
 
         if new_len != current_len {
-            resize_account(record, authority, new_len, new_len < current_len)?;
+            resize_account(record, payer, new_len, new_len < current_len)?;
         }
 
         {
@@ -398,7 +397,7 @@ impl<'info> Record<'info> {
         resize_account(record, payer, 1, true)?;
         {
             let mut data_ref = record.try_borrow_mut_data()?;
-            data_ref[DISCRIMINATOR_OFFSET] = 0xff;
+            data_ref[DISCRIMINATOR_OFFSET] = CLOSED_ACCOUNT_DISCRIMINATOR;
         }
         Ok(())
     }
@@ -499,13 +498,13 @@ impl<'info> Record<'info> {
         &self,
         account_info: &'info AccountInfo,
     ) -> Result<(), ProgramError> {
-        let required_space = Self::MINIMUM_CLASS_SIZE + self.seed.len() + self.data.len();
+        let required_space = Self::MINIMUM_RECORD_SIZE + self.seed.len() + self.data.len();
         if account_info.data_len() < required_space {
             return Err(ProgramError::InvalidAccountData);
         }
 
         let mut data = account_info.try_borrow_mut_data()?;
-        if data[0] != 0x00 {
+        if data[DISCRIMINATOR_OFFSET] != 0x00 {
             return Err(ProgramError::AccountAlreadyInitialized);
         }
 

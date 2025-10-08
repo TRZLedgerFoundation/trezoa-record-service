@@ -44,7 +44,7 @@ impl<'info> Class<'info> {
     ///
     /// This function does not perform owner checks
     pub unsafe fn check_discriminator_unchecked(data: &[u8]) -> Result<(), ProgramError> {
-        if data[0].ne(&Self::DISCRIMINATOR) {
+        if data[DISCRIMINATOR_OFFSET].ne(&Self::DISCRIMINATOR) {
             return Err(ProgramError::InvalidAccountData);
         }
 

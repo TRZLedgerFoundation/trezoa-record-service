@@ -41,14 +41,14 @@ const FIELD_OFFSET: usize = DISCRIMINATOR_OFFSET + size_of::<u64>();
 const ADDITIONAL_METADATA_LENGTH_OFFSET: usize = FIELD_OFFSET + size_of::<u8>();
 
 impl UpdateMetadata<'_> {
-    pub const DISCRIMINATOR: [u8; 8] = [0xdd, 0xe9, 0x31, 0x2d, 0xb5, 0xca, 0xdc, 0xc8];
-
     #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
         self.invoke_signed(&[])
     }
 
     pub fn invoke_signed(&self, signers: &[Signer]) -> ProgramResult {
+        const DISCRIMINATOR: [u8; 8] = [0xdd, 0xe9, 0x31, 0x2d, 0xb5, 0xca, 0xdc, 0xc8];
+
         // Account metadata
         let account_metas: [AccountMeta; 2] = [
             AccountMeta::writable(self.metadata.key()),
@@ -60,12 +60,12 @@ impl UpdateMetadata<'_> {
         // - [8]: field (u8)
         // - [9..13]: additional metadata length (u32)
         // - [13..13+additional_metadata.len()]: additional metadata bytes
-        let instruction_data_size = Self::DISCRIMINATOR.len() + size_of::<u8>() + self.additional_metadata.len();
+        let instruction_data_size = DISCRIMINATOR.len() + size_of::<u8>() + self.additional_metadata.len();
         let mut instruction_data = [UNINIT_BYTE; 2_000];
 
         write_bytes(
             &mut instruction_data[DISCRIMINATOR_OFFSET..],
-            &Self::DISCRIMINATOR,
+            &DISCRIMINATOR,
         );
 
         // Write field at offset [8]

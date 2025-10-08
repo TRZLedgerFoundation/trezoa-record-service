@@ -24,7 +24,6 @@ pub struct InitializePermanentDelegate<'a> {
 }
 
 impl InitializePermanentDelegate<'_> {
-    const DISCRIMINATOR: u8 = 0x23;
     #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
         self.invoke_signed(&[])
@@ -34,6 +33,8 @@ impl InitializePermanentDelegate<'_> {
     const DELEGATE_OFFSET: usize = Self::DISCRIMINATOR_OFFSET + size_of::<u8>();
 
     pub fn invoke_signed(&self, signers: &[Signer]) -> ProgramResult {
+        const DISCRIMINATOR: u8 = 0x23;
+
         // Account metadata
         let account_metas: [AccountMeta; 1] = [AccountMeta::writable(self.mint.key())];
 
@@ -45,7 +46,7 @@ impl InitializePermanentDelegate<'_> {
         // Set discriminator as u8 at offset [0]
         write_bytes(
             &mut instruction_data[Self::DISCRIMINATOR_OFFSET..],
-            &[Self::DISCRIMINATOR],
+            &[DISCRIMINATOR],
         );
         // Set delegate as [u8; 32] at offset [1..33]
         write_bytes(

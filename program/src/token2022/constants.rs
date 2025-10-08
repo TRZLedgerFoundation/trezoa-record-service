@@ -11,7 +11,6 @@ pub const TOKEN_2022_GROUP_POINTER_LEN: usize = 0x44;
 pub const TOKEN_2022_GROUP_LEN: usize = 0x54;
 pub const TOKEN_2022_MEMBER_POINTER_LEN: usize = 0x44;
 pub const TOKEN_2022_MEMBER_LEN: usize = 0x4C;
-pub const TOKEN_IS_FROZEN_FLAG: u8 = 2;
 
 // TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb
 pub const TOKEN_2022_PROGRAM_ID: Pubkey = [

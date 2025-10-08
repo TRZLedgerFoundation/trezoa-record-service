@@ -25,7 +25,6 @@ use pinocchio::{account_info::AccountInfo, program_error::ProgramError, ProgramR
 ///    a. The record owner, or
 ///    b. if the class is permissioned, the authority can be the permissioned authority
 pub struct DeleteRecordAccounts<'info> {
-    _authority: &'info AccountInfo,
     payer: &'info AccountInfo,
     record: &'info AccountInfo,
 }
@@ -34,15 +33,14 @@ impl<'info> TryFrom<&'info [AccountInfo]> for DeleteRecordAccounts<'info> {
     type Error = ProgramError;
 
     fn try_from(accounts: &'info [AccountInfo]) -> Result<Self, Self::Error> {
-        let [_authority, payer, record, rest @ ..] = accounts else {
+        let [authority, payer, record, rest @ ..] = accounts else {
             return Err(ProgramError::NotEnoughAccountKeys);
         };
 
         // Check if authority is the record owner or has a delegate
-        Record::check_owner_or_delegate_or_deleted(record, rest.first(), _authority, rest.last())?;
+        Record::check_owner_or_delegate_or_deleted(record, rest.first(), authority, rest.last())?;
 
         Ok(Self {
-            _authority,
             payer,
             record,
         })
