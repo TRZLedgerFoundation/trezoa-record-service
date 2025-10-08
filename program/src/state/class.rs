@@ -190,7 +190,7 @@ impl<'info> Class<'info> {
 
         let mut data = account_info.try_borrow_mut_data()?;
 
-        if data[0] != 0x00 {
+        if data[DISCRIMINATOR_OFFSET] != 0x00 {
             return Err(ProgramError::AccountAlreadyInitialized);
         }
 

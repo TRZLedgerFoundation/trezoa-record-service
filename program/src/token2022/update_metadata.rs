@@ -37,7 +37,7 @@ pub struct UpdateMetadata<'a> {
 }
 
 const DISCRIMINATOR_OFFSET: usize = 0;
-const FIELD_OFFSET: usize = DISCRIMINATOR_OFFSET + size_of::<u64>();
+const FIELD_OFFSET: usize = DISCRIMINATOR_OFFSET + size_of::<[u8; 8]>();
 const ADDITIONAL_METADATA_LENGTH_OFFSET: usize = FIELD_OFFSET + size_of::<u8>();
 
 impl UpdateMetadata<'_> {
