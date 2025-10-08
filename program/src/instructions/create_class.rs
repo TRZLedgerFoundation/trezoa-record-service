@@ -104,7 +104,7 @@ impl<'info> TryFrom<Context<'info>> for CreateClass<'info> {
         let name: &'info str = variable_data.read_str_with_length()?;
 
         #[cfg(not(feature = "perf"))]
-        if name.len() > MAX_SEED_LEN {
+        if name.len() > Class::MAX_CLASS_NAME_LEN {
             return Err(ProgramError::InvalidArgument);
         }
 
