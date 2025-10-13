@@ -17,6 +17,8 @@ export * from './freezeTokenizedRecord';
 export * from './mintTokenizedRecord';
 export * from './transferRecord';
 export * from './transferTokenizedRecord';
+export * from './updateClassAuthority';
 export * from './updateClassMetadata';
 export * from './updateRecord';
+export * from './updateRecordExpiry';
 export * from './updateRecordTokenizable';

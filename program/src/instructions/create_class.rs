@@ -12,7 +12,7 @@ use pinocchio::{
     sysvars::{rent::Rent, Sysvar},
     ProgramResult,
 };
-use pinocchio_system::instructions::CreateAccount;
+use pinocchio_system::instructions::{Allocate, Assign, CreateAccount, Transfer};
 
 use crate::{
     state::Class,
@@ -104,7 +104,7 @@ impl<'info> TryFrom<Context<'info>> for CreateClass<'info> {
         let name: &'info str = variable_data.read_str_with_length()?;
 
         #[cfg(not(feature = "perf"))]
-        if name.len() > MAX_SEED_LEN {
+        if name.len() > Class::MAX_CLASS_NAME_LEN {
             return Err(ProgramError::InvalidArgument);
         }
 
@@ -158,14 +158,37 @@ impl<'info> CreateClass<'info> {
         let signers = [Signer::from(&seeds)];
 
         // Create the account with our program as owner
-        CreateAccount {
-            from: self.accounts.payer,
-            to: self.accounts.class,
-            lamports,
-            space: space as u64,
-            owner: &crate::ID,
-        }
-        .invoke_signed(&signers)?;
+        if self.accounts.class.lamports() > 0 {
+            Allocate {
+                account: self.accounts.class,
+                space: space as u64,
+            }
+            .invoke_signed(&signers)?;
+
+            Assign {
+                account: self.accounts.class,
+                owner: &crate::ID,
+            }
+            .invoke_signed(&signers)?;
+
+            if self.accounts.class.lamports() < lamports {
+                Transfer {
+                    from: self.accounts.payer,
+                    to: self.accounts.class,
+                    lamports: lamports - self.accounts.class.lamports(),
+                }
+                .invoke()?;
+            }
+        } else {
+            CreateAccount {
+                from: self.accounts.payer,
+                to: self.accounts.class,
+                lamports,
+                space: space as u64,
+                owner: &crate::ID,
+            }
+            .invoke_signed(&signers)?;
+        }        
 
         let class = Class {
             authority: *self.accounts.authority.key(),

@@ -34,7 +34,7 @@ export type FreezeRecordInstructionAccounts = {
   /** Record account to be updated */
   record: PublicKey | Pda;
   /** Class account of the record */
-  class?: PublicKey | Pda;
+  class: PublicKey | Pda;
 };
 
 // Data.
@@ -61,7 +61,7 @@ export function getFreezeRecordInstructionDataSerializer(): Serializer<
       ],
       { description: 'FreezeRecordInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 7 })
+    (value) => ({ ...value, discriminator: 9 })
   ) as Serializer<FreezeRecordInstructionDataArgs, FreezeRecordInstructionData>;
 }
 

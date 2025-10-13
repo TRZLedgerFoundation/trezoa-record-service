@@ -5,14 +5,9 @@ use pinocchio::log::sol_log;
 
 use core::mem::size_of;
 use pinocchio::{
-    account_info::AccountInfo,
-    instruction::{Seed, Signer},
-    program_error::ProgramError,
-    pubkey::try_find_program_address,
-    sysvars::{rent::Rent, Sysvar},
-    ProgramResult,
+    account_info::AccountInfo, instruction::{Seed, Signer}, log::sol_log_64, program_error::ProgramError, pubkey::try_find_program_address, sysvars::{rent::Rent, Sysvar}, ProgramResult
 };
-use pinocchio_system::instructions::CreateAccount;
+use pinocchio_system::instructions::{Allocate, Assign, CreateAccount, Transfer};
 
 use crate::{
     state::{Class, OwnerType, Record},
@@ -53,8 +48,12 @@ impl<'info> TryFrom<&'info [AccountInfo]> for CreateRecordAccounts<'info> {
             return Err(ProgramError::NotEnoughAccountKeys);
         };
 
+        sol_log_64(0, 0, 0, 0, 0);
+
         // Check class permission
         Class::check_permission(class, rest.first())?;
+
+        sol_log_64(0, 0, 0, 0, 0);
 
         Ok(Self {
             owner,
@@ -66,7 +65,7 @@ impl<'info> TryFrom<&'info [AccountInfo]> for CreateRecordAccounts<'info> {
 }
 
 const EXPIRY_OFFSET: usize = 0;
-const NAME_LEN_OFFSET: usize = EXPIRY_OFFSET + size_of::<i64>();
+const SEED_LEN_OFFSET: usize = EXPIRY_OFFSET + size_of::<i64>();
 
 pub struct CreateRecord<'info> {
     accounts: CreateRecordAccounts<'info>,
@@ -82,6 +81,8 @@ impl<'info> TryFrom<Context<'info>> for CreateRecord<'info> {
     type Error = ProgramError;
 
     fn try_from(ctx: Context<'info>) -> Result<Self, Self::Error> {
+        sol_log_64(0, 0, 0, 0, 0);
+
         // Deserialize our accounts array
         let accounts = CreateRecordAccounts::try_from(ctx.accounts)?;
 
@@ -96,9 +97,9 @@ impl<'info> TryFrom<Context<'info>> for CreateRecord<'info> {
 
         // Deserialize variable length data
         let mut variable_data: ByteReader<'info> =
-            ByteReader::new_with_offset(ctx.data, NAME_LEN_OFFSET);
+            ByteReader::new_with_offset(ctx.data, SEED_LEN_OFFSET);
 
-        // Deserialize `name`
+        // Deserialize `seed`
         let seed: &[u8] = variable_data.read_bytes_with_length()?;
 
         #[cfg(not(feature = "perf"))]
@@ -126,7 +127,7 @@ impl<'info> CreateRecord<'info> {
     }
 
     pub fn execute(&self) -> ProgramResult {
-        let space = Record::MINIMUM_CLASS_SIZE + self.seed.len() + self.data.len();
+        let space = Record::MINIMUM_RECORD_SIZE + self.seed.len() + self.data.len();
         let rent = Rent::get()?.minimum_balance(space);
         let lamports = rent.saturating_sub(self.accounts.record.lamports());
 
@@ -145,14 +146,38 @@ impl<'info> CreateRecord<'info> {
 
         let signers = [Signer::from(&seeds)];
 
-        CreateAccount {
-            from: self.accounts.payer,
-            to: self.accounts.record,
-            lamports,
-            space: space as u64,
-            owner: &crate::ID,
-        }
-        .invoke_signed(&signers)?;
+        // Create the account with our program as owner
+        if self.accounts.record.lamports() > 0 {
+            Allocate {
+                account: self.accounts.record,
+                space: space as u64,
+            }
+            .invoke_signed(&signers)?;
+
+            Assign {
+                account: self.accounts.record,
+                owner: &crate::ID,
+            }
+            .invoke_signed(&signers)?;
+
+            if self.accounts.record.lamports() < lamports {
+                Transfer {
+                    from: self.accounts.payer,
+                    to: self.accounts.record,
+                    lamports: lamports - self.accounts.record.lamports(),
+                }
+                .invoke()?;
+            }
+        } else {
+            CreateAccount {
+                from: self.accounts.payer,
+                to: self.accounts.record,
+                lamports,
+                space: space as u64,
+                owner: &crate::ID,
+            }
+            .invoke_signed(&signers)?;
+        }    
 
         let record = Record {
             class: *self.accounts.class.key(),

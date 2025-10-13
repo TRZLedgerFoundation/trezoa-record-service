@@ -5,16 +5,13 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
-use crate::types::AdditionalMetadata;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 
-/// Token22 Metadata Extension compatible Metadata format
+/// Additional metadata for Token22 Metadata Extension compatible Metadata format
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct Metadata {
-    pub name: String,
-    pub symbol: String,
-    pub uri: String,
-    pub additional_metadata: Vec<AdditionalMetadata>,
+pub struct AdditionalMetadata {
+    pub label: String,
+    pub value: String,
 }

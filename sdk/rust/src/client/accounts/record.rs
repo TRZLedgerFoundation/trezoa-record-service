@@ -9,7 +9,7 @@ use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
 use kaigan::types::RemainderVec;
 use kaigan::types::U8PrefixVec;
-use solana_pubkey::Pubkey;
+use solana_program::pubkey::Pubkey;
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -40,10 +40,12 @@ impl Record {
     }
 }
 
-impl<'a> TryFrom<&solana_account_info::AccountInfo<'a>> for Record {
+impl<'a> TryFrom<&solana_program::account_info::AccountInfo<'a>> for Record {
     type Error = std::io::Error;
 
-    fn try_from(account_info: &solana_account_info::AccountInfo<'a>) -> Result<Self, Self::Error> {
+    fn try_from(
+        account_info: &solana_program::account_info::AccountInfo<'a>,
+    ) -> Result<Self, Self::Error> {
         let mut data: &[u8] = &(*account_info.data).borrow();
         Self::deserialize(&mut data)
     }
@@ -52,7 +54,7 @@ impl<'a> TryFrom<&solana_account_info::AccountInfo<'a>> for Record {
 #[cfg(feature = "fetch")]
 pub fn fetch_record(
     rpc: &solana_client::rpc_client::RpcClient,
-    address: &solana_pubkey::Pubkey,
+    address: &solana_program::pubkey::Pubkey,
 ) -> Result<crate::shared::DecodedAccount<Record>, std::io::Error> {
     let accounts = fetch_all_record(rpc, &[*address])?;
     Ok(accounts[0].clone())
@@ -61,7 +63,7 @@ pub fn fetch_record(
 #[cfg(feature = "fetch")]
 pub fn fetch_all_record(
     rpc: &solana_client::rpc_client::RpcClient,
-    addresses: &[solana_pubkey::Pubkey],
+    addresses: &[solana_program::pubkey::Pubkey],
 ) -> Result<Vec<crate::shared::DecodedAccount<Record>>, std::io::Error> {
     let accounts = rpc
         .get_multiple_accounts(addresses)
@@ -86,7 +88,7 @@ pub fn fetch_all_record(
 #[cfg(feature = "fetch")]
 pub fn fetch_maybe_record(
     rpc: &solana_client::rpc_client::RpcClient,
-    address: &solana_pubkey::Pubkey,
+    address: &solana_program::pubkey::Pubkey,
 ) -> Result<crate::shared::MaybeAccount<Record>, std::io::Error> {
     let accounts = fetch_all_maybe_record(rpc, &[*address])?;
     Ok(accounts[0].clone())
@@ -95,7 +97,7 @@ pub fn fetch_maybe_record(
 #[cfg(feature = "fetch")]
 pub fn fetch_all_maybe_record(
     rpc: &solana_client::rpc_client::RpcClient,
-    addresses: &[solana_pubkey::Pubkey],
+    addresses: &[solana_program::pubkey::Pubkey],
 ) -> Result<Vec<crate::shared::MaybeAccount<Record>>, std::io::Error> {
     let accounts = rpc
         .get_multiple_accounts(addresses)

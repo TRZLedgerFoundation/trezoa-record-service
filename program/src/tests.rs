@@ -12,7 +12,7 @@ use solana_record_service_client::{
     accounts::*,
     instructions::*,
     programs::SOLANA_RECORD_SERVICE_ID,
-    types::{Metadata, MetadataAdditionalMetadata},
+    types::{Metadata, AdditionalMetadata},
 };
 
 pub const AUTHORITY: Pubkey = Pubkey::new_from_array([0xaa; 32]);
@@ -341,6 +341,15 @@ const MINT_DATA_WITH_EXTENSIONS: &[u8] = &[
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
     0, 0, 1,
 ];
+const MINT_DATA_WITH_EXTENSIONS_AND_NO_SUPPLY: &[u8] = &[
+    1, 0, 0, 0, 44, 183, 51, 50, 60, 76, 5, 80, 101, 31, 190, 147, 58, 233, 60, 212, 133, 19, 33,
+    142, 101, 42, 77, 206, 214, 6, 73, 4, 96, 81, 27, 127, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0,
+    0, 44, 183, 51, 50, 60, 76, 5, 80, 101, 31, 190, 147, 58, 233, 60, 212, 133, 19, 33, 142, 101,
+    42, 77, 206, 214, 6, 73, 4, 96, 81, 27, 127, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 1,
+];
 const MINT_CLOSE_AUTHORITY_EXTENSION: &[u8] = &[
     3, 0, 32, 0, 44, 183, 51, 50, 60, 76, 5, 80, 101, 31, 190, 147, 58, 233, 60, 212, 133, 19, 33,
     142, 101, 42, 77, 206, 214, 6, 73, 4, 96, 81, 27, 127,
@@ -500,7 +509,7 @@ fn keyed_account_for_updated_mint(record: Pubkey) -> (Pubkey, Account) {
     (address, record_mint_account)
 }
 
-const MINT_METADATA_EXTENSIONE_WITH_ADDITIONAL_METADATA: &[u8; 111] = &[
+const MINT_METADATA_EXTENSION_WITH_ADDITIONAL_METADATA: &[u8; 111] = &[
     19, 0, 107, 0, 44, 183, 51, 50, 60, 76, 5, 80, 101, 31, 190, 147, 58, 233, 60, 212, 133, 19,
     33, 142, 101, 42, 77, 206, 214, 6, 73, 4, 96, 81, 27, 127, 44, 183, 51, 50, 60, 76, 5, 80, 101,
     31, 190, 147, 58, 233, 60, 212, 133, 19, 33, 142, 101, 42, 77, 206, 214, 6, 73, 4, 96, 81, 27,
@@ -517,7 +526,7 @@ fn keyed_account_for_mint_with_additional_metadata(record: Pubkey) -> (Pubkey, A
         + MINT_PERMANENT_DELEGATE_EXTENSION.len()
         + MINT_METADATA_POINTER_EXTENSION.len()
         + MINT_GROUP_MEMBER_POINTER_EXTENSION.len()
-        + MINT_METADATA_EXTENSIONE_WITH_ADDITIONAL_METADATA.len()
+        + MINT_METADATA_EXTENSION_WITH_ADDITIONAL_METADATA.len()
         + MINT_GROUP_MEMBER_EXTENSION.len();
 
     let mut mint_account_data = vec![0u8; total_size];
@@ -543,9 +552,9 @@ fn keyed_account_for_mint_with_additional_metadata(record: Pubkey) -> (Pubkey, A
         .copy_from_slice(MINT_GROUP_MEMBER_POINTER_EXTENSION);
     offset += MINT_GROUP_MEMBER_POINTER_EXTENSION.len();
     // Metadata Extension
-    mint_account_data[offset..offset + MINT_METADATA_EXTENSIONE_WITH_ADDITIONAL_METADATA.len()]
-        .copy_from_slice(MINT_METADATA_EXTENSIONE_WITH_ADDITIONAL_METADATA);
-    offset += MINT_METADATA_EXTENSIONE_WITH_ADDITIONAL_METADATA.len();
+    mint_account_data[offset..offset + MINT_METADATA_EXTENSION_WITH_ADDITIONAL_METADATA.len()]
+        .copy_from_slice(MINT_METADATA_EXTENSION_WITH_ADDITIONAL_METADATA);
+    offset += MINT_METADATA_EXTENSION_WITH_ADDITIONAL_METADATA.len();
     // Group Extension
     mint_account_data[offset..offset + MINT_GROUP_MEMBER_EXTENSION.len()]
         .copy_from_slice(MINT_GROUP_MEMBER_EXTENSION);
@@ -648,7 +657,7 @@ const MINT_GROUP_EXTENSION: &[u8] = &[
     21, 0, 80, 0, 52, 137, 177, 136, 59, 205, 145, 103, 193, 194, 30, 23, 233, 253, 189, 51, 87,
     188, 182, 87, 172, 35, 137, 100, 211, 23, 123, 152, 136, 141, 87, 92, 52, 137, 177, 136, 59,
     205, 145, 103, 193, 194, 30, 23, 233, 253, 189, 51, 87, 188, 182, 87, 172, 35, 137, 100, 211,
-    23, 123, 152, 136, 141, 87, 92, 1, 0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0,
+    23, 123, 152, 136, 141, 87, 92, 1, 0, 0, 0, 0, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255,
 ];
 
 fn keyed_account_for_group(class: Pubkey) -> (Pubkey, Account) {
@@ -850,7 +859,47 @@ fn update_class_metadata_incorrect_authority() {
             (class, class_data),
             (system_program, system_program_data),
         ],
-        &[Check::err(ProgramError::MissingRequiredSignature)],
+        &[Check::err(ProgramError::InvalidAccountData)],
+    );
+}
+
+#[test]
+fn update_class_authority() {
+    // Authority
+    let (authority, authority_data) = keyed_account_for_authority();
+    // New Authority
+    let (new_authority, _) = keyed_account_for_random_authority();
+    // Class
+    let (class, class_data) = keyed_account_for_class_default();
+    //System Program
+    let (system_program, system_program_data) = keyed_account_for_system_program();
+
+    let instruction = UpdateClassAuthority { 
+        authority: authority,
+        payer: authority,
+        class,
+        system_program, 
+    }.instruction(UpdateClassAuthorityInstructionArgs { new_authority });
+
+    let mollusk = Mollusk::new(
+        &SOLANA_RECORD_SERVICE_ID,
+        "../target/deploy/solana_record_service",
+    );
+
+    // Class Updated
+    let (_, class_data_updated) = keyed_account_for_class(new_authority, false, false, "test", "test");
+
+    mollusk.process_and_validate_instruction(
+        &instruction,
+        &[
+            (authority, authority_data),
+            (class, class_data),
+            (system_program, system_program_data),
+        ],
+        &[
+            Check::success(),
+            Check::account(&class).data(&class_data_updated.data).build(),
+        ],
     );
 }
 
@@ -1033,7 +1082,7 @@ fn create_record_with_metadata_and_additional_metadata() {
             name: make_u32prefix_string("test"),
             symbol: make_u32prefix_string("SRS"),
             uri: make_u32prefix_string("test"),
-            additional_metadata: vec![MetadataAdditionalMetadata {
+            additional_metadata: vec![AdditionalMetadata {
                 label: make_u32prefix_string("test"),
                 value: make_u32prefix_string("test"),
             }],
@@ -1111,28 +1160,28 @@ fn create_permissioned_record() {
 
 #[test]
 fn update_record() {
-    // Owner
-    let (owner, owner_data) = keyed_account_for_owner();
+    // Authority
+    let (authority, authority_data) = keyed_account_for_authority();
     // Payer
     let (payer, payer_data) = keyed_account_for_random_authority();
     // Class
-    let (class, _class_data) = keyed_account_for_class_default();
+    let (class, class_data) = keyed_account_for_class_default();
     // Record
     let (record, record_data) =
-        keyed_account_for_record(class, 0, owner, false, 0, b"test", b"test");
+        keyed_account_for_record(class, 0, OWNER, false, 0, b"test", b"test");
     // Record updated
     let (_, record_data_updated) =
-        keyed_account_for_record(class, 0, owner, false, 0, b"test", b"test2");
+        keyed_account_for_record(class, 0, OWNER, false, 0, b"test", b"test2");
 
     //System Program
     let (system_program, system_program_data) = keyed_account_for_system_program();
 
     let instruction = UpdateRecord {
-        authority: owner,
+        authority,
         payer,
         record,
+        class,
         system_program,
-        class: None,
     }
     .instruction(UpdateRecordInstructionArgs {
         data: make_remainder_vec(b"test2"),
@@ -1146,9 +1195,10 @@ fn update_record() {
     mollusk.process_and_validate_instruction(
         &instruction,
         &[
-            (owner, owner_data),
+            (authority, authority_data),
             (payer, payer_data),
             (record, record_data),
+            (class, class_data),
             (system_program, system_program_data),
         ],
         &[
@@ -1162,15 +1212,15 @@ fn update_record() {
 
 #[test]
 fn update_record_with_metadata() {
-    // Owner
-    let (owner, owner_data) = keyed_account_for_owner();
+    // Authority
+    let (authority, authority_data) = keyed_account_for_authority();
     // Payer
     let (payer, payer_data) = keyed_account_for_random_authority();
     // Class
-    let (class, _) = keyed_account_for_class_default();
+    let (class, class_data) = keyed_account_for_class_default();
     // Record
     let (record, record_data) =
-        keyed_account_for_record(class, 0, owner, false, 0, b"test", b"test");
+        keyed_account_for_record(class, 0, OWNER, false, 0, b"test", b"test");
 
     // New metadata
     let new_metadata = Metadata {
@@ -1183,7 +1233,7 @@ fn update_record_with_metadata() {
     let (_, record_data_updated) = keyed_account_for_record_with_metadata(
         class,
         0,
-        owner,
+        OWNER,
         false,
         0,
         "test",
@@ -1194,11 +1244,11 @@ fn update_record_with_metadata() {
     let (system_program, system_program_data) = keyed_account_for_system_program();
 
     let instruction = UpdateRecordTokenizable {
-        authority: owner,
+        authority,
         payer,
         record,
+        class,
         system_program,
-        class: None,
     }
     .instruction(UpdateRecordTokenizableInstructionArgs {
         metadata: Metadata {
@@ -1217,9 +1267,10 @@ fn update_record_with_metadata() {
     mollusk.process_and_validate_instruction(
         &instruction,
         &[
-            (owner, owner_data),
+            (authority, authority_data),
             (payer, payer_data),
             (record, record_data),
+            (class, class_data),
             (system_program, system_program_data),
         ],
         &[
@@ -1228,103 +1279,6 @@ fn update_record_with_metadata() {
                 .data(&record_data_updated.data)
                 .build(),
         ],
-    );
-}
-
-#[test]
-fn update_record_with_delegate() {
-    // Authority
-    let (authority, authority_data) = keyed_account_for_authority();
-    // Payer
-    let (payer, payer_data) = keyed_account_for_random_authority();
-    // Class
-    let (class, class_data) = keyed_account_for_class(authority, true, false, "test", "test");
-    // Record
-    let (record, record_data) =
-        keyed_account_for_record(class, 0, OWNER, false, 0, b"test", b"test");
-    // Record updated
-    let (_, record_data_updated) =
-        keyed_account_for_record(class, 0, OWNER, false, 0, b"test", b"test2");
-
-    //System Program
-    let (system_program, system_program_data) = keyed_account_for_system_program();
-
-    let instruction = UpdateRecord {
-        authority,
-        payer,
-        record,
-        system_program,
-        class: Some(class),
-    }
-    .instruction(UpdateRecordInstructionArgs {
-        data: make_remainder_vec(b"test2"),
-    });
-
-    let mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
-    );
-
-    mollusk.process_and_validate_instruction(
-        &instruction,
-        &[
-            (authority, authority_data),
-            (payer, payer_data),
-            (record, record_data),
-            (system_program, system_program_data),
-            (class, class_data),
-        ],
-        &[
-            Check::success(),
-            Check::account(&record)
-                .data(&record_data_updated.data)
-                .build(),
-        ],
-    );
-}
-
-#[test]
-/// Fails because the class is not permissioned
-fn update_record_with_delegate_not_permissioned() {
-    // Authority
-    let (authority, authority_data) = keyed_account_for_authority();
-    // Payer
-    let (payer, payer_data) = keyed_account_for_random_authority();
-    // Class
-    let (class, class_data) = keyed_account_for_class(authority, false, false, "test", "test");
-    // Record
-    let (record, record_data) =
-        keyed_account_for_record(class, 0, OWNER, false, 0, b"test", b"test");
-
-    //System Program
-    let (system_program, system_program_data) = keyed_account_for_system_program();
-
-    let instruction = UpdateRecord {
-        authority,
-        payer,
-        record,
-        system_program,
-        class: Some(class),
-    }
-    .instruction(UpdateRecordInstructionArgs {
-        data: make_remainder_vec(b"test2"),
-    });
-
-    let mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
-    );
-
-    mollusk.process_and_validate_instruction(
-        &instruction,
-        &[
-            (authority, authority_data),
-            (payer, payer_data),
-            (record, record_data),
-            (system_program, system_program_data),
-            (class, class_data),
-        ],
-        &[Check::err(ProgramError::InvalidAccountData)],
     );
 }
 
@@ -1348,8 +1302,8 @@ fn update_record_with_delegate_incorrect_authority() {
         authority: random_authority,
         payer,
         record,
+        class,
         system_program,
-        class: Some(class),
     }
     .instruction(UpdateRecordInstructionArgs {
         data: make_remainder_vec(b"test2"),
@@ -1369,7 +1323,58 @@ fn update_record_with_delegate_incorrect_authority() {
             (system_program, system_program_data),
             (class, class_data),
         ],
-        &[Check::err(ProgramError::MissingRequiredSignature)],
+        &[Check::err(ProgramError::InvalidAccountData)],
+    );
+}
+
+#[test]
+fn update_class_expiry() {
+    // Authority
+    let (authority, authority_data) = keyed_account_for_authority();
+    // Payer
+    let (payer, payer_data) = keyed_account_for_random_authority();
+    // Class
+    let (class, class_data) = keyed_account_for_class(AUTHORITY, true, false, "test", "test");
+    // Record
+    let (record, record_data) =
+        keyed_account_for_record(class, 0, OWNER, false, 0, b"test", b"test");
+    //System Program
+    let (system_program, system_program_data) = keyed_account_for_system_program();
+
+    let instruction = UpdateRecordExpiry {
+        authority,
+        payer,
+        record,
+        class,
+        system_program,
+    }
+    .instruction(UpdateRecordExpiryInstructionArgs {
+        expiry: 1000,
+    });
+
+    let mollusk = Mollusk::new(
+        &SOLANA_RECORD_SERVICE_ID,
+        "../target/deploy/solana_record_service",
+    );
+
+    // Record updated
+    let (_, record_data_updated) = keyed_account_for_record(class, 0, OWNER, false, 1000, b"test", b"test");
+
+    mollusk.process_and_validate_instruction(
+        &instruction,
+        &[
+            (authority, authority_data),
+            (payer, payer_data),
+            (record, record_data),
+            (system_program, system_program_data),
+            (class, class_data),
+        ],
+        &[
+            Check::success(),
+            Check::account(&record)
+                .data(&record_data_updated.data)
+                .build(),
+        ],
     );
 }
 
@@ -1504,6 +1509,8 @@ fn delete_record() {
         payer,
         record,
         class: None,
+        token2022_program: None,
+        mint: None,
     }
     .instruction();
 
@@ -1543,6 +1550,8 @@ fn delete_record_with_delegate() {
         payer,
         record,
         class: Some(class),
+        token2022_program: None,
+        mint: None,
     }
     .instruction();
 
@@ -1567,48 +1576,63 @@ fn delete_record_with_delegate() {
 }
 
 #[test]
-fn freeze_record() {
+fn delete_tokenized_record_with_no_supply() {
     // Owner
     let (owner, owner_data) = keyed_account_for_owner();
     // Class
-    let (class, _class_data) = keyed_account_for_class_default();
+    let (class, _) = keyed_account_for_class_default();
+    // Mint
+    let (record, _bump) = Pubkey::find_program_address(
+        &[b"record", &class.as_ref(), b"test"],
+        &SOLANA_RECORD_SERVICE_ID,
+    );
+    let (mint, mut mint_data) = keyed_account_for_mint(record);
+    mint_data.data_as_mut_slice()[..MINT_DATA_WITH_EXTENSIONS_AND_NO_SUPPLY.len()].copy_from_slice(MINT_DATA_WITH_EXTENSIONS_AND_NO_SUPPLY);
     // Record
-    let (record, record_data) =
-        keyed_account_for_record(class, 0, OWNER, false, 0, b"test", b"test");
-    // Record frozen
-    let (_, record_data_frozen) =
-        keyed_account_for_record(class, 0, OWNER, true, 0, b"test", b"test");
-
-    let instruction = FreezeRecord {
+    let (_, record_data) =
+        keyed_account_for_record(class, 1, mint, false, 0, b"test", b"test");
+    // Token2022 Program
+    let (token2022_program, token2022_program_data) = mollusk_svm_programs_token::token2022::keyed_account();
+   
+    let instruction = DeleteRecord {
         authority: owner,
+        payer: owner,
         record,
         class: None,
+        token2022_program: Some(token2022_program),
+        mint: Some(mint),
     }
-    .instruction(FreezeRecordInstructionArgs { is_frozen: true });
+    .instruction();
 
-    let mollusk = Mollusk::new(
+    let mut mollusk = Mollusk::new(
         &SOLANA_RECORD_SERVICE_ID,
         "../target/deploy/solana_record_service",
     );
 
+    mollusk_svm_programs_token::token2022::add_program(&mut mollusk);
+
     mollusk.process_and_validate_instruction(
         &instruction,
-        &[(owner, owner_data), (record, record_data)],
+        &[
+            (owner, owner_data),
+            (record, record_data),
+            (mint, mint_data),
+            (token2022_program, token2022_program_data),
+        ],
         &[
             Check::success(),
-            Check::account(&record)
-                .data(&record_data_frozen.data)
-                .build(),
+            Check::account(&record).data(&[0xff]).build(),
+            Check::account(&mint).data(&[]).build(),
         ],
     );
 }
 
 #[test]
-fn freeze_record_with_delegate() {
+fn freeze_record() {
     // Authority
     let (authority, authority_data) = keyed_account_for_authority();
     // Class
-    let (class, class_data) = keyed_account_for_class(authority, true, false, "test", "test");
+    let (class, class_data) = keyed_account_for_class_default();
     // Record
     let (record, record_data) =
         keyed_account_for_record(class, 0, OWNER, false, 0, b"test", b"test");
@@ -1619,7 +1643,7 @@ fn freeze_record_with_delegate() {
     let instruction = FreezeRecord {
         authority,
         record,
-        class: Some(class),
+        class,
     }
     .instruction(FreezeRecordInstructionArgs { is_frozen: true });
 
@@ -1630,11 +1654,7 @@ fn freeze_record_with_delegate() {
 
     mollusk.process_and_validate_instruction(
         &instruction,
-        &[
-            (authority, authority_data),
-            (record, record_data),
-            (class, class_data),
-        ],
+        &[(authority, authority_data), (record, record_data), (class, class_data)],
         &[
             Check::success(),
             Check::account(&record)
@@ -1660,7 +1680,7 @@ fn freeze_record_already_frozen() {
     let instruction = FreezeRecord {
         authority,
         record,
-        class: Some(class),
+        class,
     }
     .instruction(FreezeRecordInstructionArgs { is_frozen: true });
 
@@ -1684,6 +1704,9 @@ fn freeze_record_already_frozen() {
         ],
     );
 }
+
+// `[1, 0, 0, 0, 52, 137, 177, 136, 59, 205, 145, 103, 193, 194, 30, 23, 233, 253, 189, 51, 87, 188, 182, 87, 172, 35, 137, 100, 211, 23, 123, 152, 136, 141, 87, 92, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 52, 137, 177, 136, 59, 205, 145, 103, 193, 194, 30, 23, 233, 253, 189, 51, 87, 188, 182, 87, 172, 35, 137, 100, 211, 23, 123, 152, 136, 141, 87, 92, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 20, 0, 64, 0, 52, 137, 177, 136, 59, 205, 145, 103, 193, 194, 30, 23, 233, 253, 189, 51, 87, 188, 182, 87, 172, 35, 137, 100, 211, 23, 123, 152, 136, 141, 87, 92, 52, 137, 177, 136, 59, 205, 145, 103, 193, 194, 30, 23, 233, 253, 189, 51, 87, 188, 182, 87, 172, 35, 137, 100, 211, 23, 123, 152, 136, 141, 87, 92, 21, 0, 80, 0, 52, 137, 177, 136, 59, 205, 145, 103, 193, 194, 30, 23, 233, 253, 189, 51, 87, 188, 182, 87, 172, 35, 137, 100, 211, 23, 123, 152, 136, 141, 87, 92, 52, 137, 177, 136, 59, 205, 145, 103, 193, 194, 30, 23, 233, 253, 189, 51, 87, 188, 182, 87, 172, 35, 137, 100, 211, 23, 123, 152, 136, 141, 87, 92, 1, 0, 0, 0, 0, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0]`,
+// `[1, 0, 0, 0, 52, 137, 177, 136, 59, 205, 145, 103, 193, 194, 30, 23, 233, 253, 189, 51, 87, 188, 182, 87, 172, 35, 137, 100, 211, 23, 123, 152, 136, 141, 87, 92, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 52, 137, 177, 136, 59, 205, 145, 103, 193, 194, 30, 23, 233, 253, 189, 51, 87, 188, 182, 87, 172, 35, 137, 100, 211, 23, 123, 152, 136, 141, 87, 92, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 20, 0, 64, 0, 52, 137, 177, 136, 59, 205, 145, 103, 193, 194, 30, 23, 233, 253, 189, 51, 87, 188, 182, 87, 172, 35, 137, 100, 211, 23, 123, 152, 136, 141, 87, 92, 52, 137, 177, 136, 59, 205, 145, 103, 193, 194, 30, 23, 233, 253, 189, 51, 87, 188, 182, 87, 172, 35, 137, 100, 211, 23, 123, 152, 136, 141, 87, 92, 21, 0, 80, 0, 52, 137, 177, 136, 59, 205, 145, 103, 193, 194, 30, 23, 233, 253, 189, 51, 87, 188, 182, 87, 172, 35, 137, 100, 211, 23, 123, 152, 136, 141, 87, 92, 52, 137, 177, 136, 59, 205, 145, 103, 193, 194, 30, 23, 233, 253, 189, 51, 87, 188, 182, 87, 172, 35, 137, 100, 211, 23, 123, 152, 136, 141, 87, 92, 1, 0, 0, 0, 0, 0, 0, 0, 255, 255, 255, 255, 255, 255, 255, 255]`
 
 #[test]
 fn mint_record_token() {
@@ -1968,10 +1991,10 @@ fn mint_record_token_with_delegate() {
 
 #[test]
 fn freeze_tokenized_record() {
-    // Owner
-    let (owner, owner_data) = keyed_account_for_owner();
+    // Authority
+    let (authority, authority_data) = keyed_account_for_authority();
     // Class
-    let (class, _class_data) = keyed_account_for_class_default();
+    let (class, class_data) = keyed_account_for_class_default();
     // Mint
     let (record_address, _) = Pubkey::find_program_address(
         &[b"record", &class.as_ref(), b"test"],
@@ -1982,19 +2005,19 @@ fn freeze_tokenized_record() {
     let (record, record_data) =
         keyed_account_for_record(class, 1, mint, false, 0, b"test", b"test");
     // ATA
-    let (token_account, token_account_data) = keyed_account_for_token(owner, mint, false);
+    let (token_account, token_account_data) = keyed_account_for_token(OWNER, mint, false);
     // ATA updated
-    let (_, token_account_data_updated) = keyed_account_for_token(owner, mint, true);
+    let (_, token_account_data_updated) = keyed_account_for_token(OWNER, mint, true);
 
     let (token2022, token2022_data) = mollusk_svm_programs_token::token2022::keyed_account();
 
     let instruction = FreezeTokenizedRecord {
-        authority: owner,
+        authority,
         record,
         mint,
         token_account,
+        class,
         token2022,
-        class: None,
     }
     .instruction(FreezeTokenizedRecordInstructionArgs { is_frozen: true });
 
@@ -2009,10 +2032,11 @@ fn freeze_tokenized_record() {
     mollusk.process_and_validate_instruction(
         &instruction,
         &[
-            (owner, owner_data),
+            (authority, authority_data),
             (record, record_data),
             (mint, mint_data),
             (token_account, token_account_data),
+            (class, class_data),
             (token2022, token2022_data),
         ],
         &[
@@ -2051,8 +2075,8 @@ fn freeze_tokenized_record_delegate() {
         record,
         mint,
         token_account,
+        class,
         token2022,
-        class: Some(class),
     }
     .instruction(FreezeTokenizedRecordInstructionArgs { is_frozen: true });
 
@@ -2492,9 +2516,6 @@ fn update_tokenized_record() {
     }
     .instruction();
 
-    // Owner
-    let (owner, owner_data) = keyed_account_for_owner();
-
     // New metadata
     let new_metadata = Metadata {
         name: make_u32prefix_string("test2"),
@@ -2507,7 +2528,7 @@ fn update_tokenized_record() {
     let (_, record_data_updated) = keyed_account_for_record_with_metadata(
         class,
         0,
-        owner,
+        OWNER,
         false,
         0,
         "test",
@@ -2518,11 +2539,11 @@ fn update_tokenized_record() {
     let (system_program, system_program_data) = keyed_account_for_system_program();
 
     let update_instruction = UpdateRecordTokenizable {
-        authority: owner,
+        authority,
         payer,
         record,
+        class,
         system_program,
-        class: None,
     }
     .instruction(UpdateRecordTokenizableInstructionArgs {
         metadata: Metadata {
@@ -2541,6 +2562,9 @@ fn update_tokenized_record() {
 
     // New Mint
     let (_, new_mint_data) = keyed_account_for_updated_mint(record);
+
+    // Owner
+    let (owner, owner_data) = keyed_account_for_owner();
 
     let mint_instruction = MintTokenizedRecord {
         owner,
@@ -2567,7 +2591,10 @@ fn update_tokenized_record() {
 
     mollusk.process_and_validate_instruction_chain(
         &[
-            (&burn_instruction, &[Check::success()]),
+            (
+                &burn_instruction, 
+                &[Check::success()]
+            ),
             (
                 &update_instruction,
                 &[

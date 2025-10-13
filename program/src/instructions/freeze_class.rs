@@ -21,7 +21,6 @@ use pinocchio::{account_info::AccountInfo, program_error::ProgramError, ProgramR
 /// # Security
 /// 1. The authority account must be a signer and should be the owner of the class.
 pub struct FreezeClassAccounts<'info> {
-    authority: &'info AccountInfo,
     class: &'info AccountInfo,
 }
 
@@ -36,7 +35,7 @@ impl<'info> TryFrom<&'info [AccountInfo]> for FreezeClassAccounts<'info> {
         // Account Checks
         Class::check_authority(class, authority)?;
 
-        Ok(Self { authority, class })
+        Ok(Self { class })
     }
 }
 
@@ -83,7 +82,6 @@ impl<'info> FreezeClass<'info> {
         unsafe {
             Class::update_is_frozen_unchecked(
                 self.accounts.class,
-                self.accounts.authority,
                 self.is_frozen,
             )
         }

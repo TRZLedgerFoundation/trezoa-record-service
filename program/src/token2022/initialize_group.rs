@@ -14,11 +14,15 @@ use crate::{
     utils::{write_bytes, UNINIT_BYTE},
 };
 
-/// Initializes a Mint Close Authority.
+/// Initializes a Group.
 ///
 /// ### Accounts:
-///   0. `[WRITE]`  The mint account to initialize a close authority for.
+///   0. `[WRITE]`  The group account to initialize.
+///   1. `[]` The mint account.
+///   2. `[SIGNER]` The mint authority account.
 pub struct InitializeGroup<'a> {
+    // Group Account
+    pub group: &'a AccountInfo,
     /// Mint Account.
     pub mint: &'a AccountInfo,
     /// Mint Authority Account.
@@ -30,8 +34,6 @@ pub struct InitializeGroup<'a> {
 }
 
 impl InitializeGroup<'_> {
-    pub const DISCRIMINATOR: [u8; 8] = [0x79, 0x71, 0x6c, 0x27, 0x36, 0x33, 0x00, 0x04];
-
     #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
         self.invoke_signed(&[])
@@ -42,9 +44,11 @@ impl InitializeGroup<'_> {
     const MAX_SIZE_OFFSET: usize = Self::UPDATE_AUTHORITY_OFFSET + size_of::<Pubkey>();
 
     pub fn invoke_signed(&self, signers: &[Signer]) -> ProgramResult {
+        const INITIALIZE_GROUP_DISCRIMINATOR: [u8; 8] = [0x79, 0x71, 0x6c, 0x27, 0x36, 0x33, 0x00, 0x04];
+
         // Account metadata
         let account_metas: [AccountMeta; 3] = [
-            AccountMeta::writable(self.mint.key()),
+            AccountMeta::writable(self.group.key()),
             AccountMeta::readonly(self.mint.key()),
             AccountMeta::readonly_signer(self.mint_authority.key()),
         ];
@@ -57,7 +61,7 @@ impl InitializeGroup<'_> {
 
         write_bytes(
             &mut instruction_data[Self::DISCRIMINATOR_OFFSET..],
-            &Self::DISCRIMINATOR,
+            &INITIALIZE_GROUP_DISCRIMINATOR,
         );
 
         write_bytes(
@@ -76,6 +80,6 @@ impl InitializeGroup<'_> {
             data: unsafe { from_raw_parts(instruction_data.as_ptr() as _, instruction_data.len()) },
         };
 
-        invoke_signed(&instruction, &[self.mint], signers)
+        invoke_signed(&instruction, &[self.group, self.mint, self.mint_authority], signers)
     }
 }

@@ -20,7 +20,7 @@ pub struct Context<'info> {
 ///
 /// # Arguments
 /// * `target_account` - The account to resize
-/// * `authority` - The authority account that will receive excess lamports or provide additional lamports
+/// * `payer` - The account that will receive excess lamports or provide additional lamports
 /// * `new_size` - The new size for the account
 /// * `zero_out` - Whether to zero out the new space (true if shrinking, false if expanding)
 pub fn resize_account(
@@ -29,6 +29,11 @@ pub fn resize_account(
     new_size: usize,
     zero_out: bool,
 ) -> ProgramResult {
+    // Check if the new size is bigger than 10KB
+    if new_size > 1024 * 10 {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
     // If the account is already the correct size, return early
     if new_size == target_account.data_len() {
         return Ok(());
@@ -51,7 +56,7 @@ pub fn resize_account(
             .invoke()?;
         }
         core::cmp::Ordering::Less => {
-            // Can return excess lamports to authority
+            // Can return excess lamports to payer
             let lamports_diff = target_account
                 .lamports()
                 .saturating_sub(new_minimum_balance);
@@ -147,23 +152,6 @@ impl<'info> ByteReader<'info> {
         Ok(value)
     }
 
-    pub fn read_optional_with_offset<T: Sized + Copy>(
-        data: &'info [u8],
-        offset: usize,
-    ) -> Result<Option<T>, ProgramError> {
-        let is_some: u8 = Self::read_with_offset(data, offset)?;
-        if is_some == 0 {
-            Ok(None)
-        } else if is_some == 1 {
-            Ok(Some(Self::read_with_offset(
-                data,
-                offset + size_of::<u8>(),
-            )?))
-        } else {
-            Err(ProgramError::InvalidInstructionData)
-        }
-    }
-
     pub fn remaining_bytes(&self) -> usize {
         self.data.len() - self.offset
     }
@@ -175,10 +163,6 @@ pub struct ByteWriter<'info> {
 }
 
 impl<'info> ByteWriter<'info> {
-    pub fn new(data: &'info mut [u8]) -> Self {
-        Self { data, offset: 0 }
-    }
-
     pub fn new_with_offset(data: &'info mut [u8], offset: usize) -> Self {
         Self { data, offset }
     }

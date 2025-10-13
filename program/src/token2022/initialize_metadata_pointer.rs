@@ -27,9 +27,6 @@ pub struct InitializeMetadataPointer<'a> {
 }
 
 impl InitializeMetadataPointer<'_> {
-    const METADATA_POINTER_DISCRIMINATOR: u8 = 0x27;
-    const METADATA_POINTER_INITIALIZE_DISCRIMINATOR: u8 = 0x00;
-
     #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
         self.invoke_signed(&[])
@@ -43,6 +40,9 @@ impl InitializeMetadataPointer<'_> {
     const METADATA_ADDRESS_OFFSET: usize = Self::METADATA_AUTHORITY_OFFSET + size_of::<Pubkey>();
 
     pub fn invoke_signed(&self, signers: &[Signer]) -> ProgramResult {
+        const METADATA_POINTER_DISCRIMINATOR: u8 = 0x27;
+        const METADATA_POINTER_INITIALIZE_DISCRIMINATOR: u8 = 0x00;
+        
         // Account metadata
         let account_metas: [AccountMeta; 1] = [AccountMeta::writable(self.mint.key())];
 
@@ -55,12 +55,12 @@ impl InitializeMetadataPointer<'_> {
 
         write_bytes(
             &mut instruction_data,
-            &[Self::METADATA_POINTER_DISCRIMINATOR],
+            &[METADATA_POINTER_DISCRIMINATOR],
         );
 
         write_bytes(
             &mut instruction_data[Self::METADATA_POINTER_DISCRIMINATOR_OFFSET..],
-            &[Self::METADATA_POINTER_INITIALIZE_DISCRIMINATOR],
+            &[METADATA_POINTER_INITIALIZE_DISCRIMINATOR],
         );
 
         write_bytes(

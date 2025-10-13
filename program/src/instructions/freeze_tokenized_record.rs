@@ -1,15 +1,11 @@
 use crate::{
-    state::Record,
+    state::{Class, Record, CLASS_OFFSET, OWNER_OFFSET},
     token2022::{FreezeAccount, ThawAccount, Token},
     utils::{ByteReader, Context},
 };
 use core::mem::size_of;
 use pinocchio::{
-    account_info::AccountInfo,
-    instruction::{Seed, Signer},
-    program_error::ProgramError,
-    pubkey::try_find_program_address,
-    ProgramResult,
+    account_info::AccountInfo, instruction::{Seed, Signer}, program_error::ProgramError, pubkey::{try_find_program_address, Pubkey}, ProgramResult
 };
 
 /// FreezeRecord instruction.
@@ -24,13 +20,11 @@ use pinocchio::{
 /// 2. `mint` - The mint account that that is linked to the record
 /// 3. `token_account` - The token account that is linked to the record
 /// 4. `record` - The record account to be frozen/unfrozen
-/// 5. `token_2022_program` - Required for freezing/unfreezing the token account
-/// 6. `class` - [remaining accounts] Required if the authority is not the record owner
+/// 5. `class` - The class of the record to be frozen/unfrozen
+/// 6. `token_2022_program` - Required for freezing/unfreezing the token account
 ///
 /// # Security
-/// 1. The authority must be either:
-///    a. The record owner, or
-///    b. A delegate with freeze authority
+/// The authority must be: the class authority
 pub struct FreezeTokenizedRecordAccounts<'info> {
     mint: &'info AccountInfo,
     token_account: &'info AccountInfo,
@@ -40,18 +34,26 @@ pub struct FreezeTokenizedRecordAccounts<'info> {
 impl<'info> TryFrom<&'info [AccountInfo]> for FreezeTokenizedRecordAccounts<'info> {
     type Error = ProgramError;
     fn try_from(accounts: &'info [AccountInfo]) -> Result<Self, Self::Error> {
-        let [owner, mint, token_account, record, _token_2022_program, rest @ ..] = accounts else {
+        let [authority, mint, token_account, record, class, _token_2022_program] = accounts else {
             return Err(ProgramError::NotEnoughAccountKeys);
         };
 
-        // Check if owner is the record owner or has a delegate
-        Record::check_owner_or_delegate_tokenized(
-            record,
-            rest.first(),
-            owner,
-            mint,
-            token_account,
-        )?;
+        // Check if authority is the class authority
+        Class::check_authority(class, authority)?;
+
+        // Check if the Record is correct
+        Record::check_program_id_and_discriminator(record)?;
+
+        let record_data = record.try_borrow_data()?;
+        // Check if the class is the correct class
+        if class.key().ne(&record_data[CLASS_OFFSET..CLASS_OFFSET + size_of::<Pubkey>()]) {
+            return Err(ProgramError::InvalidAccountData);
+        }
+
+        // Check if the token is linked to the record
+        if mint.key().ne(&record_data[OWNER_OFFSET..OWNER_OFFSET + size_of::<Pubkey>()]) {
+            return Err(ProgramError::InvalidAccountData);
+        }
 
         Ok(Self {
             mint,
@@ -74,7 +76,7 @@ pub const FREEZE_RECORD_MIN_IX_LENGTH: usize = size_of::<u8>();
 impl<'info> TryFrom<Context<'info>> for FreezeTokenizedRecord<'info> {
     type Error = ProgramError;
 
-    fn try_from(ctx: Context<'info>) -> Result<Self, Self::Error> {
+    fn try_from(ctx: Context<'info>) -> Result<Self, Self::Error> {        
         // Deserialize our accounts array
         let accounts = FreezeTokenizedRecordAccounts::try_from(ctx.accounts)?;
 

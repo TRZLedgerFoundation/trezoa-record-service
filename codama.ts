@@ -11,46 +11,6 @@ const typescriptClientsDir = path.join(
   "ts",
 );
 
-const additional_metadata = definedTypeNode({
-    name: "additionalMetadata",
-    docs: "Additional metadata for Token22 Metadata Extension compatible Metadata format",
-    type: arrayTypeNode(
-        structTypeNode([
-            structFieldTypeNode({
-                name: 'label',
-                type: sizePrefixTypeNode(stringTypeNode("utf8"), numberTypeNode("u32"))
-            }),
-            structFieldTypeNode({
-                name: 'value', 
-                type: sizePrefixTypeNode(stringTypeNode("utf8"), numberTypeNode("u32"))
-            })
-        ]),
-        prefixedCountNode(numberTypeNode("u32"))
-    )
-});
-
-const metadata = definedTypeNode({
-    name: "metadata",
-    docs: "Token22 Metadata Extension compatible Metadata format",
-    type: structTypeNode([
-        structFieldTypeNode({
-            name: 'name',
-            type: sizePrefixTypeNode(stringTypeNode("utf8"), numberTypeNode("u32"))
-        }),
-        structFieldTypeNode({
-            name: 'symbol', 
-            type: sizePrefixTypeNode(stringTypeNode("utf8"), numberTypeNode("u32")),
-            defaultValue: stringValueNode("SRS"),
-            defaultValueStrategy: 'optional'
-        }),
-        structFieldTypeNode({
-            name: 'uri', 
-            type: sizePrefixTypeNode(stringTypeNode("utf8"), numberTypeNode("u32"))
-        }),
-        structFieldTypeNode(additional_metadata)
-    ])
-});
-
 const root = rootNode(
     programNode({
         name: "solana-record-service",
@@ -177,7 +137,7 @@ const root = rootNode(
                 ]
             }),
             instructionNode({
-                name: "freezeClass",
+                name: "updateClassAuthority",
                 discriminators: [
                     constantDiscriminatorNode(constantValueNode(numberTypeNode("u8"), numberValueNode(2)))
                 ],
@@ -186,6 +146,48 @@ const root = rootNode(
                         name: 'discriminator',
                         type: numberTypeNode('u8'),
                         defaultValue: numberValueNode(2),
+                        defaultValueStrategy: 'omitted',
+                    }),
+                    instructionArgumentNode({ name: 'newAuthority', type: publicKeyTypeNode() }),
+                ],
+                accounts: [
+                    instructionAccountNode({
+                        name: "authority",
+                        isSigner: true,
+                        isWritable: true,
+                        docs: ["Authority used to update a class"]
+                    }),
+                    instructionAccountNode({
+                        name: "payer",
+                        isSigner: true,
+                        isWritable: true,
+                        docs: ["Account that will pay of get refunded for the class update"]
+                    }),
+                    instructionAccountNode({
+                        name: "class",
+                        isSigner: false,
+                        isWritable: true,
+                        docs: ["Class account to be updated"]
+                    }),
+                    instructionAccountNode({
+                        name: "systemProgram",
+                        defaultValue: publicKeyValueNode('11111111111111111111111111111111', 'systemProgram'),
+                        isSigner: false,
+                        isWritable: false,
+                        docs: ["System Program used to extend our class account"]
+                    }),
+                ]
+            }),
+            instructionNode({
+                name: "freezeClass",
+                discriminators: [
+                    constantDiscriminatorNode(constantValueNode(numberTypeNode("u8"), numberValueNode(3)))
+                ],
+                arguments: [
+                    instructionArgumentNode({
+                        name: 'discriminator',
+                        type: numberTypeNode('u8'),
+                        defaultValue: numberValueNode(3),
                         defaultValueStrategy: 'omitted',
                     }),
                     instructionArgumentNode({ name: 'isFrozen', type: booleanTypeNode() }),
@@ -208,13 +210,13 @@ const root = rootNode(
             instructionNode({
                 name: "createRecord",
                 discriminators: [
-                    constantDiscriminatorNode(constantValueNode(numberTypeNode("u8"), numberValueNode(3)))
+                    constantDiscriminatorNode(constantValueNode(numberTypeNode("u8"), numberValueNode(4)))
                 ],
                 arguments: [
                     instructionArgumentNode({
                         name: 'discriminator',
                         type: numberTypeNode('u8'),
-                        defaultValue: numberValueNode(3),
+                        defaultValue: numberValueNode(4),
                         defaultValueStrategy: 'omitted',
                     }),
                     instructionArgumentNode({ 
@@ -262,18 +264,18 @@ const root = rootNode(
                         isWritable: false,
                         docs: ["Optional authority for permissioned classes"]
                     }),
-                ]
+                ],
             }),
             instructionNode({
                 name: "createRecordTokenizable",
                 discriminators: [
-                    constantDiscriminatorNode(constantValueNode(numberTypeNode("u8"), numberValueNode(3)))
+                    constantDiscriminatorNode(constantValueNode(numberTypeNode("u8"), numberValueNode(4)))
                 ],
                 arguments: [
                     instructionArgumentNode({
                         name: 'discriminator',
                         type: numberTypeNode('u8'),
-                        defaultValue: numberValueNode(3),
+                        defaultValue: numberValueNode(4),
                         defaultValueStrategy: 'omitted',
                     }),
                     instructionArgumentNode({ 
@@ -321,18 +323,18 @@ const root = rootNode(
                         isWritable: false,
                         docs: ["Optional authority for permissioned classes"]
                     }),
-                ]
+                ],
             }),
             instructionNode({
                 name: "updateRecord",
                 discriminators: [
-                    constantDiscriminatorNode(constantValueNode(numberTypeNode("u8"), numberValueNode(4)))
+                    constantDiscriminatorNode(constantValueNode(numberTypeNode("u8"), numberValueNode(5)))
                 ],
                 arguments: [
                     instructionArgumentNode({
                         name: 'discriminator',
                         type: numberTypeNode('u8'),
-                        defaultValue: numberValueNode(4),
+                        defaultValue: numberValueNode(5),
                         defaultValueStrategy: 'omitted',
                     }),
                     instructionArgumentNode({ name: 'data', type: bytesTypeNode() }),
@@ -357,31 +359,30 @@ const root = rootNode(
                         docs: ["Record account to be updated"]
                     }),
                     instructionAccountNode({
+                        name: "class",
+                        isSigner: false,
+                        isWritable: false,
+                        docs: ["Class account of the record"]
+                    }),
+                    instructionAccountNode({
                         name: "systemProgram",
                         defaultValue: publicKeyValueNode('11111111111111111111111111111111', 'systemProgram'),
                         isSigner: false,
                         isWritable: false,
                         docs: ["System Program used to extend our record account"]
                     }),
-                    instructionAccountNode({
-                        name: "class",
-                        isOptional: true,
-                        isSigner: false,
-                        isWritable: false,
-                        docs: ["Class account of the record"]
-                    }),
                 ]
             }),
             instructionNode({
                 name: "updateRecordTokenizable",
                 discriminators: [
-                    constantDiscriminatorNode(constantValueNode(numberTypeNode("u8"), numberValueNode(4)))
+                    constantDiscriminatorNode(constantValueNode(numberTypeNode("u8"), numberValueNode(5)))
                 ],
                 arguments: [
                     instructionArgumentNode({
                         name: 'discriminator',
                         type: numberTypeNode('u8'),
-                        defaultValue: numberValueNode(4),
+                        defaultValue: numberValueNode(5),
                         defaultValueStrategy: 'omitted',
                     }),
                     instructionArgumentNode({ name: 'metadata', type: definedTypeLinkNode('metadata')})
@@ -406,31 +407,78 @@ const root = rootNode(
                         docs: ["Record account to be updated"]
                     }),
                     instructionAccountNode({
+                        name: "class",
+                        isSigner: false,
+                        isWritable: false,
+                        docs: ["Class account of the record"]
+                    }),
+                    instructionAccountNode({
                         name: "systemProgram",
                         defaultValue: publicKeyValueNode('11111111111111111111111111111111', 'systemProgram'),
                         isSigner: false,
                         isWritable: false,
                         docs: ["System Program used to extend our record account"]
                     }),
-                    instructionAccountNode({
-                        name: "class",
-                        isOptional: true,
-                        isSigner: false,
-                        isWritable: false,
-                        docs: ["Class account of the record"]
-                    }),
-                ]
+                ],
             }),
             instructionNode({
-                name: "transferRecord",
+                name: "updateRecordExpiry",
                 discriminators: [
-                    constantDiscriminatorNode(constantValueNode(numberTypeNode("u8"), numberValueNode(5)))
+                    constantDiscriminatorNode(constantValueNode(numberTypeNode("u8"), numberValueNode(6)))
                 ],
                 arguments: [
                     instructionArgumentNode({
                         name: 'discriminator',
                         type: numberTypeNode('u8'),
-                        defaultValue: numberValueNode(5),
+                        defaultValue: numberValueNode(6),
+                        defaultValueStrategy: 'omitted',
+                    }),
+                    instructionArgumentNode({ name: 'expiry', type: numberTypeNode("i64") }),
+                ],
+                accounts: [
+                    instructionAccountNode({
+                        name: "authority",
+                        isSigner: true,
+                        isWritable: true,
+                        docs: ["Record owner or class authority for permissioned classes"]
+                    }),
+                    instructionAccountNode({
+                        name: "payer",
+                        isSigner: true,
+                        isWritable: true,
+                        docs: ["Account that will pay of get refunded for the record update"]
+                    }),
+                    instructionAccountNode({
+                        name: "record",
+                        isSigner: false,
+                        isWritable: true,
+                        docs: ["Record account to be updated"]
+                    }),
+                    instructionAccountNode({
+                        name: "class",
+                        isSigner: false,
+                        isWritable: false,
+                        docs: ["Class account of the record"]
+                    }),
+                    instructionAccountNode({
+                        name: "systemProgram",
+                        defaultValue: publicKeyValueNode('11111111111111111111111111111111', 'systemProgram'),
+                        isSigner: false,
+                        isWritable: false,
+                        docs: ["System Program used to extend our record account"]
+                    }),
+                ],
+            }),
+            instructionNode({
+                name: "transferRecord",
+                discriminators: [
+                    constantDiscriminatorNode(constantValueNode(numberTypeNode("u8"), numberValueNode(7)))
+                ],
+                arguments: [
+                    instructionArgumentNode({
+                        name: 'discriminator',
+                        type: numberTypeNode('u8'),
+                        defaultValue: numberValueNode(7),
                         defaultValueStrategy: 'omitted',
                     }),
                     instructionArgumentNode({ name: 'newOwner', type: publicKeyTypeNode() }),
@@ -455,18 +503,18 @@ const root = rootNode(
                         isWritable: false,
                         docs: ["Class account of the record"]
                     }),
-                ]
+                ],
             }),
             instructionNode({
                 name: "deleteRecord",
                 discriminators: [
-                    constantDiscriminatorNode(constantValueNode(numberTypeNode("u8"), numberValueNode(6)))
+                    constantDiscriminatorNode(constantValueNode(numberTypeNode("u8"), numberValueNode(8)))
                 ],
                 arguments: [
                     instructionArgumentNode({
                         name: 'discriminator',
                         type: numberTypeNode('u8'),
-                        defaultValue: numberValueNode(6),
+                        defaultValue: numberValueNode(8),
                         defaultValueStrategy: 'omitted',
                     })
                 ],
@@ -496,18 +544,32 @@ const root = rootNode(
                         isWritable: false,
                         docs: ["Class account of the record"]
                     }),
-                ]
+                    instructionAccountNode({
+                        name: "token2022Program",
+                        isOptional: true,
+                        isSigner: false,
+                        isWritable: false,
+                        docs: ["Token2022 Program used to close the mint account"]
+                    }),
+                    instructionAccountNode({
+                        name: "mint",
+                        isOptional: true,
+                        isSigner: false,
+                        isWritable: true,
+                        docs: ["Mint account for the tokenized record"]
+                    }),
+                ],
             }),
             instructionNode({
                 name: "freezeRecord",
                 discriminators: [
-                    constantDiscriminatorNode(constantValueNode(numberTypeNode("u8"), numberValueNode(7)))
+                    constantDiscriminatorNode(constantValueNode(numberTypeNode("u8"), numberValueNode(9)))
                 ],
                 arguments: [
                     instructionArgumentNode({
                         name: 'discriminator',
                         type: numberTypeNode('u8'),
-                        defaultValue: numberValueNode(7),
+                        defaultValue: numberValueNode(9),
                         defaultValueStrategy: 'omitted',
                     }),
                     instructionArgumentNode({ name: 'isFrozen', type: booleanTypeNode() })
@@ -527,7 +589,6 @@ const root = rootNode(
                     }),
                     instructionAccountNode({
                         name: "class",
-                        isOptional: true,
                         isSigner: false,
                         isWritable: false,
                         docs: ["Class account of the record"]
@@ -537,13 +598,13 @@ const root = rootNode(
             instructionNode({
                 name: "mintTokenizedRecord",
                 discriminators: [
-                    constantDiscriminatorNode(constantValueNode(numberTypeNode("u8"), numberValueNode(8)))
+                    constantDiscriminatorNode(constantValueNode(numberTypeNode("u8"), numberValueNode(10)))
                 ],
                 arguments: [
                     instructionArgumentNode({
                         name: 'discriminator',
                         type: numberTypeNode('u8'),
-                        defaultValue: numberValueNode(8),
+                        defaultValue: numberValueNode(10),
                         defaultValueStrategy: 'omitted',
                     }),
                 ],
@@ -622,13 +683,13 @@ const root = rootNode(
             instructionNode({
                 name: "freezeTokenizedRecord",
                 discriminators: [
-                    constantDiscriminatorNode(constantValueNode(numberTypeNode("u8"), numberValueNode(10)))
+                    constantDiscriminatorNode(constantValueNode(numberTypeNode("u8"), numberValueNode(11)))
                 ],
                 arguments: [
                     instructionArgumentNode({
                         name: 'discriminator',
                         type: numberTypeNode('u8'),
-                        defaultValue: numberValueNode(9),
+                        defaultValue: numberValueNode(11),
                         defaultValueStrategy: 'omitted',
                     }),
                     instructionArgumentNode({ name: 'isFrozen', type: booleanTypeNode() })
@@ -659,31 +720,30 @@ const root = rootNode(
                         docs: ["Record account associated with the tokenized record"]
                     }),
                     instructionAccountNode({
+                        name: "class",
+                        isSigner: false,
+                        isWritable: false,
+                        docs: ["Class account of the record"]
+                    }),    
+                    instructionAccountNode({
                         name: "token2022",
                         defaultValue: publicKeyValueNode('TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb', 'token2022'),
                         isSigner: false,
                         isWritable: false,
                         docs: ["Token2022 Program used to freeze/unfreeze the tokenized record"]
                     }),
-                    instructionAccountNode({
-                        name: "class",
-                        isOptional: true,
-                        isSigner: false,
-                        isWritable: false,
-                        docs: ["Class account of the record"]
-                    }),    
                 ]
             }),
             instructionNode({
                 name: "transferTokenizedRecord",
                 discriminators: [
-                    constantDiscriminatorNode(constantValueNode(numberTypeNode("u8"), numberValueNode(11)))
+                    constantDiscriminatorNode(constantValueNode(numberTypeNode("u8"), numberValueNode(12)))
                 ],
                 arguments: [
                     instructionArgumentNode({
                         name: 'discriminator',
                         type: numberTypeNode('u8'),
-                        defaultValue: numberValueNode(10),
+                        defaultValue: numberValueNode(12),
                         defaultValueStrategy: 'omitted',
                     }),
                 ],
@@ -732,18 +792,18 @@ const root = rootNode(
                         isWritable: false,
                         docs: ["Class account of the record"]
                     }),    
-                ]
+                ],
             }),
             instructionNode({
                 name: "burnTokenizedRecord",
                 discriminators: [
-                    constantDiscriminatorNode(constantValueNode(numberTypeNode("u8"), numberValueNode(12)))
+                    constantDiscriminatorNode(constantValueNode(numberTypeNode("u8"), numberValueNode(13)))
                 ],
                 arguments: [
                     instructionArgumentNode({
                         name: 'discriminator',
                         type: numberTypeNode('u8'),
-                        defaultValue: numberValueNode(11),
+                        defaultValue: numberValueNode(13),
                         defaultValueStrategy: 'omitted',
                     })
                 ],
@@ -792,11 +852,51 @@ const root = rootNode(
                         isOptional: true,
                         docs: ["Class account of the record"]
                     }),    
-                ]
+                ],
             })
         ],
         definedTypes: [
-            metadata
+            definedTypeNode({
+                name: "metadata",
+                docs: "Token22 Metadata Extension compatible Metadata format",
+                type: structTypeNode([
+                    structFieldTypeNode({
+                        name: 'name',
+                        type: sizePrefixTypeNode(stringTypeNode("utf8"), numberTypeNode("u32"))
+                    }),
+                    structFieldTypeNode({
+                        name: 'symbol', 
+                        type: sizePrefixTypeNode(stringTypeNode("utf8"), numberTypeNode("u32")),
+                        defaultValue: stringValueNode("SRS"),
+                        defaultValueStrategy: 'optional'
+                    }),
+                    structFieldTypeNode({
+                        name: 'uri', 
+                        type: sizePrefixTypeNode(stringTypeNode("utf8"), numberTypeNode("u32"))
+                    }),
+                    structFieldTypeNode({
+                        name: 'additionalMetadata',
+                        type: arrayTypeNode(
+                            definedTypeLinkNode('additionalMetadata'),
+                            prefixedCountNode(numberTypeNode("u32"))
+                        )
+                    })
+                ])  
+            }),
+            definedTypeNode({
+                name: "additionalMetadata",
+                docs: "Additional metadata for Token22 Metadata Extension compatible Metadata format",
+                type: structTypeNode([
+                    structFieldTypeNode({
+                        name: 'label',
+                        type: sizePrefixTypeNode(stringTypeNode("utf8"), numberTypeNode("u32"))
+                    }),
+                    structFieldTypeNode({
+                        name: 'value', 
+                        type: sizePrefixTypeNode(stringTypeNode("utf8"), numberTypeNode("u32"))
+                    })
+                ])
+            })
         ]
     })
 )

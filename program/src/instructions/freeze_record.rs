@@ -1,9 +1,9 @@
 use crate::{
-    state::Record,
+    state::{Class, Record, CLASS_OFFSET},
     utils::{ByteReader, Context},
 };
 use core::mem::size_of;
-use pinocchio::{account_info::AccountInfo, program_error::ProgramError, ProgramResult};
+use pinocchio::{account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey, ProgramResult};
 
 /// FreezeRecord instruction.
 ///
@@ -15,12 +15,10 @@ use pinocchio::{account_info::AccountInfo, program_error::ProgramError, ProgramR
 /// # Accounts
 /// 1. `authority` - The account that has permission to freeze/unfreeze the record (must be a signer)
 /// 2. `record` - The record account to be frozen/unfrozen
-/// 3. `class` - [optional] The class of the record to be frozen/unfrozen
+/// 3. `class` - The class of the record to be frozen/unfrozen
 ///
 /// # Security
-/// 1. The authority must be either:
-///    a. The record owner, or
-///    b. if the class is permissioned, the authority can be the permissioned authority
+/// The authority must be the class authority
 pub struct FreezeRecordAccounts<'info> {
     record: &'info AccountInfo,
 }
@@ -28,12 +26,20 @@ pub struct FreezeRecordAccounts<'info> {
 impl<'info> TryFrom<&'info [AccountInfo]> for FreezeRecordAccounts<'info> {
     type Error = ProgramError;
     fn try_from(accounts: &'info [AccountInfo]) -> Result<Self, Self::Error> {
-        let [authority, record, rest @ ..] = accounts else {
+        let [authority, record, class] = accounts else {
             return Err(ProgramError::NotEnoughAccountKeys);
         };
 
-        // Check if authority is the record owner or has a delegate
-        Record::check_owner_or_delegate(record, rest.first(), authority)?;
+        // Check if authority is the class authority
+        Class::check_authority(class, authority)?;
+
+        // Check if the Record is correct
+        Record::check_program_id_and_discriminator(record)?;
+
+        // Check if the class is the correct class
+        if class.key().ne(&record.try_borrow_data()?[CLASS_OFFSET..CLASS_OFFSET + size_of::<Pubkey>()]) {
+            return Err(ProgramError::InvalidAccountData);
+        }
 
         Ok(Self { record })
     }

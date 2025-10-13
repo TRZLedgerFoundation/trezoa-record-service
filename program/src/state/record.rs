@@ -1,25 +1,19 @@
 use crate::{
-    token2022::{Mint, Token},
-    utils::{resize_account, ByteReader, ByteWriter},
+    constants::CLOSED_ACCOUNT_DISCRIMINATOR, token2022::{CloseAccount, Mint, Token}, utils::{resize_account, ByteWriter}
 };
 use core::{mem::size_of, str};
 use pinocchio::{
-    account_info::{AccountInfo, Ref, RefMut},
-    program_error::ProgramError,
-    pubkey::Pubkey,
+    account_info::{AccountInfo, Ref, RefMut}, instruction::{Seed, Signer}, program_error::ProgramError, pubkey::{try_find_program_address, Pubkey}
 };
 
 use super::{Class, IS_PERMISSIONED_OFFSET};
 
-/// Maximum size allowed for a record account
-pub const MAX_RECORD_SIZE: usize = 1024 * 1024; // 1MB
-
 /// Offsets
 const DISCRIMINATOR_OFFSET: usize = 0;
-const CLASS_OFFSET: usize = DISCRIMINATOR_OFFSET + size_of::<u8>();
+pub const CLASS_OFFSET: usize = DISCRIMINATOR_OFFSET + size_of::<u8>();
 const OWNER_TYPE_OFFSET: usize = CLASS_OFFSET + size_of::<Pubkey>();
 pub const OWNER_OFFSET: usize = OWNER_TYPE_OFFSET + size_of::<u8>();
-const IS_FROZEN_OFFSET: usize = OWNER_OFFSET + size_of::<Pubkey>();
+pub const IS_FROZEN_OFFSET: usize = OWNER_OFFSET + size_of::<Pubkey>();
 const EXPIRY_OFFSET: usize = IS_FROZEN_OFFSET + size_of::<bool>();
 const SEED_LEN_OFFSET: usize = EXPIRY_OFFSET + size_of::<i64>();
 pub const SEED_OFFSET: usize = SEED_LEN_OFFSET + size_of::<u8>();
@@ -56,7 +50,7 @@ impl<'info> Record<'info> {
     pub const DISCRIMINATOR: u8 = 2;
 
     /// Minimum size required for a valid record account
-    pub const MINIMUM_CLASS_SIZE: usize = size_of::<u8>()
+    pub const MINIMUM_RECORD_SIZE: usize = size_of::<u8>()
         + size_of::<Pubkey>()
         + size_of::<u8>()
         + size_of::<Pubkey>()
@@ -84,43 +78,6 @@ impl<'info> Record<'info> {
     }
 
     #[inline(always)]
-    /// # Safety
-    ///
-    /// This function does not perform owner checks
-    pub unsafe fn check_owner_unchecked(
-        data: &[u8],
-        owner: &AccountInfo,
-    ) -> Result<(), ProgramError> {
-        if !owner.is_signer() {
-            return Err(ProgramError::MissingRequiredSignature);
-        }
-
-        // Check if the authority is the owner
-        if owner
-            .key()
-            .ne(&data[OWNER_OFFSET..OWNER_OFFSET + size_of::<Pubkey>()])
-        {
-            return Err(ProgramError::MissingRequiredSignature);
-        }
-
-        Ok(())
-    }
-
-    #[inline(always)]
-    pub fn check_owner(
-        account_info: &AccountInfo,
-        owner: &AccountInfo,
-    ) -> Result<(), ProgramError> {
-        // Check the program id and the discriminator
-        Self::check_program_id_and_discriminator(account_info)?;
-
-        let data = account_info.try_borrow_data()?;
-
-        // Check the owner
-        unsafe { Self::check_owner_unchecked(&data, owner) }
-    }
-
-    #[inline(always)]
     pub fn validate_delegate(
         class: &AccountInfo,
         authority: &AccountInfo,
@@ -137,6 +94,78 @@ impl<'info> Record<'info> {
             Class::check_discriminator_unchecked(&class_data)?;
             Class::check_authority_unchecked(&class_data, authority)
         }
+    }
+
+    #[inline(always)]
+    pub fn check_owner_or_delegate_or_deleted(
+        record: &AccountInfo,
+        class: Option<&AccountInfo>,
+        authority: &AccountInfo,
+        mint: Option<&AccountInfo>
+    ) -> Result<(), ProgramError> {
+        // Check the program id and the discriminator
+        Self::check_program_id_and_discriminator(record)?;
+
+        let data = record.try_borrow_data()?;
+
+        // Check if the Mint has been burned without passing through the BurnTokenizedRecord instruction
+        if data[OWNER_TYPE_OFFSET].eq(&(OwnerType::Token as u8)) {
+            let mint = mint.ok_or(ProgramError::InvalidAccountData)?;
+
+            if mint.key().ne(&data[OWNER_OFFSET..OWNER_OFFSET + size_of::<Pubkey>()]) {
+                return Err(ProgramError::InvalidAccountData);
+            }
+
+            if Mint::get_supply(mint)? != 0 {
+                return Err(ProgramError::InvalidAccountData);
+            }
+
+            // Close the Mint and get back the rent
+            let bump = [
+            try_find_program_address(&[b"mint", record.key()], &crate::ID)
+                .ok_or(ProgramError::InvalidArgument)?
+                .1,
+            ];
+
+            let seeds = [
+                Seed::from(b"mint"),
+                Seed::from(record.key()),
+                Seed::from(&bump),
+            ];
+    
+            let signers = [Signer::from(&seeds)];
+    
+            // Close the mint account
+            CloseAccount {
+                account: mint,
+                destination: authority,
+                authority: mint,
+            }
+            .invoke_signed(&signers)?;
+
+            return Ok(());
+        }
+
+        // Check if the authority is signer
+        if !authority.is_signer() {
+            return Err(ProgramError::MissingRequiredSignature);
+        }
+
+        // Check if the authority is the owner
+        if authority
+            .key()
+            .eq(&data[OWNER_OFFSET..OWNER_OFFSET + size_of::<Pubkey>()])
+        {
+            return Ok(());
+        }
+
+        // Validate the delegate
+        let class = class.ok_or(ProgramError::InvalidAccountData)?;
+        if class.key().ne(&data[CLASS_OFFSET..CLASS_OFFSET + size_of::<Pubkey>()]) {
+            return Err(ProgramError::InvalidAccountData);
+        }
+
+        Self::validate_delegate(class, authority)
     }
 
     #[inline(always)]
@@ -170,6 +199,10 @@ impl<'info> Record<'info> {
 
         // Validate the delegate
         let class = class.ok_or(ProgramError::MissingRequiredSignature)?;
+        if class.key().ne(&data[CLASS_OFFSET..CLASS_OFFSET + size_of::<Pubkey>()]) {
+            return Err(ProgramError::InvalidAccountData);
+        }
+
         Self::validate_delegate(class, authority)
     }
 
@@ -227,7 +260,11 @@ impl<'info> Record<'info> {
             return Ok(());
         }
 
-        let class = class.ok_or(ProgramError::MissingRequiredSignature)?;
+        // Validate the delegate
+        let class = class.ok_or(ProgramError::InvalidAccountData)?;
+        if class.key().ne(&record_data[CLASS_OFFSET..CLASS_OFFSET + size_of::<Pubkey>()]) {
+            return Err(ProgramError::InvalidAccountData);
+        }
 
         Self::validate_delegate(class, authority)
     }
@@ -298,9 +335,28 @@ impl<'info> Record<'info> {
     /// # Safety
     ///
     /// This function does not perform owner checks
+    pub unsafe fn update_expiry_unchecked(
+        data: &mut RefMut<'info, [u8]>,
+        new_expiry: i64,
+    ) -> Result<(), ProgramError> {
+        // Check if the record is frozen
+        if data[IS_FROZEN_OFFSET].eq(&1u8) {
+            return Err(ProgramError::InvalidAccountData);
+        }
+
+        // Update the expiry
+        data[EXPIRY_OFFSET..EXPIRY_OFFSET + size_of::<i64>()].clone_from_slice(&new_expiry.to_le_bytes());
+
+        Ok(())
+    }
+
+    #[inline(always)]
+    /// # Safety
+    ///
+    /// This function does not perform owner checks
     pub unsafe fn update_data_unchecked(
         record: &'info AccountInfo,
-        authority: &'info AccountInfo,
+        payer: &'info AccountInfo,
         data: &'info str,
     ) -> Result<(), ProgramError> {
         let seed_len = {
@@ -313,7 +369,7 @@ impl<'info> Record<'info> {
         let new_len = offset + data.len();
 
         if new_len != current_len {
-            resize_account(record, authority, new_len, new_len < current_len)?;
+            resize_account(record, payer, new_len, new_len < current_len)?;
         }
 
         {
@@ -341,7 +397,7 @@ impl<'info> Record<'info> {
         resize_account(record, payer, 1, true)?;
         {
             let mut data_ref = record.try_borrow_mut_data()?;
-            data_ref[DISCRIMINATOR_OFFSET] = 0xff;
+            data_ref[DISCRIMINATOR_OFFSET] = CLOSED_ACCOUNT_DISCRIMINATOR;
         }
         Ok(())
     }
@@ -390,7 +446,7 @@ impl<'info> Record<'info> {
             offset += size_of::<u32>() + value_len;
         }
 
-        Ok(offset)
+        Ok(offset - (SEED_LEN_OFFSET - size_of::<u8>() - data[SEED_LEN_OFFSET] as usize))
     }
 
     #[inline(always)]
@@ -402,7 +458,7 @@ impl<'info> Record<'info> {
     ) -> Result<(&'info [u8], Option<&'info [u8]>), ProgramError> {
         let mut offset = SEED_LEN_OFFSET + size_of::<u8>() + data[SEED_LEN_OFFSET] as usize;
 
-        // Read seed_len and skip name
+        // Read seed_len and skip seed
         let seed_len =
             u32::from_le_bytes(data[offset..offset + size_of::<u32>()].try_into().unwrap())
                 as usize;
@@ -442,13 +498,13 @@ impl<'info> Record<'info> {
         &self,
         account_info: &'info AccountInfo,
     ) -> Result<(), ProgramError> {
-        let required_space = Self::MINIMUM_CLASS_SIZE + self.seed.len() + self.data.len();
+        let required_space = Self::MINIMUM_RECORD_SIZE + self.seed.len() + self.data.len();
         if account_info.data_len() < required_space {
             return Err(ProgramError::InvalidAccountData);
         }
 
         let mut data = account_info.try_borrow_mut_data()?;
-        if data[0] != 0x00 {
+        if data[DISCRIMINATOR_OFFSET] != 0x00 {
             return Err(ProgramError::AccountAlreadyInitialized);
         }
 
@@ -464,22 +520,5 @@ impl<'info> Record<'info> {
         variable_data.write_str(self.data)?;
 
         Ok(())
-    }
-
-    /// # Safety
-    /// SRS Program ID is not checked
-    #[inline(always)]
-    pub unsafe fn from_bytes_unchecked(data: &'info [u8]) -> Result<Self, ProgramError> {
-        let mut variable = ByteReader::new_with_offset(data, SEED_LEN_OFFSET);
-
-        Ok(Self {
-            class: ByteReader::read_with_offset(data, CLASS_OFFSET)?,
-            owner_type: ByteReader::read_with_offset(data, OWNER_TYPE_OFFSET)?,
-            owner: ByteReader::read_with_offset(data, OWNER_OFFSET)?,
-            is_frozen: ByteReader::read_with_offset(data, IS_FROZEN_OFFSET)?,
-            expiry: ByteReader::read_with_offset(data, EXPIRY_OFFSET)?,
-            seed: variable.read_bytes_with_length()?,
-            data: variable.read_str(variable.remaining_bytes())?,
-        })
     }
 }

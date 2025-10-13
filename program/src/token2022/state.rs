@@ -1,10 +1,12 @@
-use crate::token2022::constants::{TOKEN_2022_PROGRAM_ID, TOKEN_IS_FROZEN_FLAG};
+use crate::token2022::constants::TOKEN_2022_PROGRAM_ID;
 use core::mem::size_of;
 use pinocchio::{account_info::AccountInfo, program_error::ProgramError, pubkey::Pubkey};
 
 const TOKEN_2022_ACCOUNT_DISCRIMINATOR_OFFSET: usize = 165;
+const TOKEN_IS_FROZEN_FLAG: u8 = 2;
 const MINT_DISCRIMINATOR: u8 = 0x01;
 const TOKEN_ACCOUNT_DISCRIMINATOR: u8 = 0x02;
+const TOKEN_ACCOUNT_SUPPLY_OFFSET: usize = 36;
 
 #[repr(C)]
 pub struct Mint<'info> {
@@ -30,7 +32,7 @@ impl<'info> Mint<'info> {
         Ok(())
     }
 
-    pub fn check_initialized(account_info: &AccountInfo) -> Result<bool, ProgramError> {
+    pub fn check_discriminator(account_info: &AccountInfo) -> Result<bool, ProgramError> {
         if unsafe { account_info.owner().ne(&TOKEN_2022_PROGRAM_ID) } {
             return Ok(false);
         }
@@ -42,6 +44,22 @@ impl<'info> Mint<'info> {
         }
 
         Ok(true)
+    }
+
+    pub fn get_supply(account_info: &AccountInfo) -> Result<u64, ProgramError> {
+        if unsafe { account_info.owner().ne(&TOKEN_2022_PROGRAM_ID) } {
+            return Err(ProgramError::InvalidAccountData);
+        }
+
+        let data = account_info.try_borrow_data()?;
+
+        Ok(
+            u64::from_le_bytes(
+                data[TOKEN_ACCOUNT_SUPPLY_OFFSET..TOKEN_ACCOUNT_SUPPLY_OFFSET + size_of::<u64>()]
+                    .try_into()
+                    .unwrap()
+            )
+        )
     }
 }
 
@@ -75,16 +93,6 @@ impl<'info> Token<'info> {
         }
 
         Ok(())
-    }
-
-    /// # Safety
-    /// Token Program ID is not checked
-    pub unsafe fn get_mint_address_unchecked(data: &[u8]) -> Result<Pubkey, ProgramError> {
-        Ok(
-            data[TOKEN_MINT_OFFSET..TOKEN_MINT_OFFSET + size_of::<Pubkey>()]
-                .try_into()
-                .unwrap(),
-        )
     }
 
     /// # Safety

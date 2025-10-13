@@ -9,19 +9,17 @@ use pinocchio::{
 };
 
 use crate::{
-    constants::MAX_METADATA_LEN,
     token2022::constants::TOKEN_2022_PROGRAM_ID,
     utils::{write_bytes, UNINIT_BYTE},
 };
 
-/// Accounts expected by this instruction:
+/// Updates the metadata for a Token-2022 mint.
 ///
-/// 0. `[w]` Metadata account
-/// 1. `[s]` Update authority
+/// ### Accounts:
+/// 0. `[WRITE]` Metadata account
+/// 1. `[SIGNER]` Update authority
 ///
-/// Data expected by this instruction:
-///
-/// 0. `UpdateField`
+/// ### Data: 0. `UpdateField`
 ///
 /// pub struct UpdateField {
 ///    /// Field to update in the metadata (0 = Name, 1 = Symbol, 2 = Uri, 3 = Key(String))
@@ -39,18 +37,18 @@ pub struct UpdateMetadata<'a> {
 }
 
 const DISCRIMINATOR_OFFSET: usize = 0;
-const FIELD_OFFSET: usize = DISCRIMINATOR_OFFSET + size_of::<u64>();
+const FIELD_OFFSET: usize = DISCRIMINATOR_OFFSET + size_of::<[u8; 8]>();
 const ADDITIONAL_METADATA_LENGTH_OFFSET: usize = FIELD_OFFSET + size_of::<u8>();
 
 impl UpdateMetadata<'_> {
-    pub const DISCRIMINATOR: [u8; 8] = [0xdd, 0xe9, 0x31, 0x2d, 0xb5, 0xca, 0xdc, 0xc8];
-
     #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
         self.invoke_signed(&[])
     }
 
     pub fn invoke_signed(&self, signers: &[Signer]) -> ProgramResult {
+        const DISCRIMINATOR: [u8; 8] = [0xdd, 0xe9, 0x31, 0x2d, 0xb5, 0xca, 0xdc, 0xc8];
+
         // Account metadata
         let account_metas: [AccountMeta; 2] = [
             AccountMeta::writable(self.metadata.key()),
@@ -60,31 +58,29 @@ impl UpdateMetadata<'_> {
         // instruction data
         // - [0]: instruction discriminator (8 bytes, [u8;8])
         // - [8]: field (u8)
-        // - [9..13]: new_uri length (u32)
-        // - [13..13+new_uri.len()]: new_uri bytes
-        let mut instruction_data =
-            [UNINIT_BYTE; Self::DISCRIMINATOR.len() + size_of::<u32>() + MAX_METADATA_LEN];
+        // - [9..13]: additional metadata length (u32)
+        // - [13..13+additional_metadata.len()]: additional metadata bytes
+        let instruction_data_size = DISCRIMINATOR.len() + size_of::<u8>() + self.additional_metadata.len();
+        let mut instruction_data = [UNINIT_BYTE; 2_000];
 
         write_bytes(
             &mut instruction_data[DISCRIMINATOR_OFFSET..],
-            &Self::DISCRIMINATOR,
+            &DISCRIMINATOR,
         );
 
         // Write field at offset [8]
         write_bytes(&mut instruction_data[FIELD_OFFSET..], &[3]);
 
-        // Write new_uri length at offset [9..13]
+        // Write additional metadata length at offset [9..13]
         write_bytes(
             &mut instruction_data[ADDITIONAL_METADATA_LENGTH_OFFSET..],
             self.additional_metadata,
         );
 
-        let instruction_len = ADDITIONAL_METADATA_LENGTH_OFFSET + self.additional_metadata.len();
-
         let instruction = Instruction {
             program_id: &TOKEN_2022_PROGRAM_ID,
             accounts: &account_metas,
-            data: unsafe { from_raw_parts(instruction_data.as_ptr() as _, instruction_len) },
+            data: unsafe { from_raw_parts(instruction_data.as_ptr() as _, instruction_data_size) },
         };
 
         invoke_signed(

@@ -24,6 +24,7 @@ pub struct Class<'info> {
 
 impl<'info> Class<'info> {
     pub const DISCRIMINATOR: u8 = 1;
+    pub const MAX_CLASS_NAME_LEN: usize = 0xff;
     pub const MINIMUM_CLASS_SIZE: usize =
         size_of::<u8>() + size_of::<Pubkey>() + size_of::<bool>() * 2 + size_of::<u8>();
 
@@ -43,7 +44,7 @@ impl<'info> Class<'info> {
     ///
     /// This function does not perform owner checks
     pub unsafe fn check_discriminator_unchecked(data: &[u8]) -> Result<(), ProgramError> {
-        if data[0].ne(&Self::DISCRIMINATOR) {
+        if data[DISCRIMINATOR_OFFSET].ne(&Self::DISCRIMINATOR) {
             return Err(ProgramError::InvalidAccountData);
         }
 
@@ -66,7 +67,7 @@ impl<'info> Class<'info> {
             .key()
             .ne(&data[AUTHORITY_OFFSET..AUTHORITY_OFFSET + size_of::<Pubkey>()])
         {
-            return Err(ProgramError::MissingRequiredSignature);
+            return Err(ProgramError::InvalidAccountData);
         }
 
         Ok(())
@@ -111,37 +112,11 @@ impl<'info> Class<'info> {
     /// # Safety
     ///
     /// This function does not perform owner checks
-    pub unsafe fn update_is_permissioned_unchecked(
-        data: &'info mut [u8],
-        authority: &'info AccountInfo,
-        is_permissioned: bool,
-    ) -> Result<(), ProgramError> {
-        unsafe {
-            Self::check_authority_unchecked(data, authority)?;
-        }
-
-        if data[IS_PERMISSIONED_OFFSET] == is_permissioned as u8 {
-            return Ok(());
-        }
-
-        data[IS_PERMISSIONED_OFFSET] = is_permissioned as u8;
-
-        Ok(())
-    }
-
-    /// # Safety
-    ///
-    /// This function does not perform owner checks
     pub unsafe fn update_is_frozen_unchecked(
         class: &'info AccountInfo,
-        authority: &'info AccountInfo,
         is_frozen: bool,
     ) -> Result<(), ProgramError> {
         let mut data = class.try_borrow_mut_data()?;
-
-        unsafe {
-            Self::check_authority_unchecked(&data, authority)?;
-        }
 
         if data[IS_FROZEN_OFFSET] == is_frozen as u8 {
             return Ok(());
@@ -151,6 +126,21 @@ impl<'info> Class<'info> {
 
         Ok(())
     }
+
+    /// # Safety
+    ///
+    /// This function does not perform owner checks
+    pub unsafe fn update_authority_unchecked(
+        class: &'info AccountInfo,
+        authority: Pubkey,
+    ) -> Result<(), ProgramError> {
+        let mut data = class.try_borrow_mut_data()?;
+
+        data[AUTHORITY_OFFSET..AUTHORITY_OFFSET + size_of::<Pubkey>()].clone_from_slice(&authority);
+
+        Ok(())
+    }
+
 
     /// # Safety
     ///
@@ -200,7 +190,7 @@ impl<'info> Class<'info> {
 
         let mut data = account_info.try_borrow_mut_data()?;
 
-        if data[0] != 0x00 {
+        if data[DISCRIMINATOR_OFFSET] != 0x00 {
             return Err(ProgramError::AccountAlreadyInitialized);
         }
 

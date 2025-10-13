@@ -5,20 +5,13 @@ use pinocchio::log::sol_log;
 use pinocchio_associated_token_account::instructions::Create;
 
 use crate::{
-    state::{OwnerType, Record, OWNER_OFFSET},
+    state::{OwnerType, Record, CLASS_OFFSET, IS_FROZEN_OFFSET, OWNER_OFFSET},
     token2022::{
         constants::{
-            TOKEN_2022_CLOSE_MINT_AUTHORITY_LEN, TOKEN_2022_GROUP_LEN,
-            TOKEN_2022_GROUP_POINTER_LEN, TOKEN_2022_MEMBER_LEN, TOKEN_2022_MEMBER_POINTER_LEN,
-            TOKEN_2022_METADATA_POINTER_LEN, TOKEN_2022_MINT_BASE_LEN, TOKEN_2022_MINT_LEN,
-            TOKEN_2022_PERMANENT_DELEGATE_LEN, TOKEN_2022_PROGRAM_ID,
-        },
-        InitializeGroup, InitializeGroupMemberPointer, InitializeGroupPointer, InitializeMember,
-        InitializeMetadata, InitializeMetadataPointer, InitializeMint2,
-        InitializeMintCloseAuthority, InitializePermanentDelegate, Mint, MintToChecked, Token,
-        UpdateMetadata,
+            TOKEN_2022_CLOSE_MINT_AUTHORITY_LEN, TOKEN_2022_GROUP_LEN, TOKEN_2022_GROUP_POINTER_LEN, TOKEN_2022_MEMBER_LEN, TOKEN_2022_MEMBER_POINTER_LEN, TOKEN_2022_METADATA_LEN, TOKEN_2022_METADATA_POINTER_LEN, TOKEN_2022_MINT_BASE_LEN, TOKEN_2022_MINT_LEN, TOKEN_2022_PERMANENT_DELEGATE_LEN, TOKEN_2022_PROGRAM_ID
+        }, FreezeAccount, InitializeGroup, InitializeGroupMemberPointer, InitializeGroupPointer, InitializeMember, InitializeMetadata, InitializeMetadataPointer, InitializeMint2, InitializeMintCloseAuthority, InitializePermanentDelegate, Mint, MintToChecked, Token, UpdateMetadata
     },
-    utils::Context,
+    utils::Context, ID,
 };
 use pinocchio::{
     account_info::AccountInfo,
@@ -28,9 +21,9 @@ use pinocchio::{
     sysvars::{rent::Rent, Sysvar},
     ProgramResult,
 };
-use pinocchio_system::instructions::CreateAccount;
+use pinocchio_system::instructions::{Allocate, Assign, CreateAccount, Transfer};
 
-/// MintRecordToken instruction.
+/// MintTokenizedRecord instruction.
 ///
 /// This instruction:
 /// 1. Validates the authority and record
@@ -47,8 +40,8 @@ use pinocchio_system::instructions::CreateAccount;
 /// 5. `mint` - The mint account of the record token
 /// 6. `class` - The class of the record
 /// 7. `group` - The group of the record
-/// 8. `tokenAccount` - The token account where we mint the record token to
-/// 9. `token2022` - The Token2022 program
+/// 8. `token_account` - The associated token account where we mint the record token to
+/// 9. `token_2022_program` - The Token2022 program
 /// 10. `system_program` - Required for initializing our accounts
 ///
 /// # Security
@@ -87,11 +80,21 @@ impl<'info> TryFrom<&'info [AccountInfo]> for MintTokenizedRecordAccounts<'info>
             return Err(ProgramError::InvalidAccountData);
         }
 
+        // Check that the class of the record is the same as the class passed in 
+        if record_data[CLASS_OFFSET..CLASS_OFFSET + size_of::<Pubkey>()].ne(class.key()) {
+            return Err(ProgramError::InvalidAccountData);
+        }
+
         let seeds = [owner.key(), TOKEN_2022_PROGRAM_ID.as_ref(), mint.key()];
         let (token_account_address, _) =
             find_program_address(&seeds, &pinocchio_associated_token_account::ID);
 
         if token_account_address.ne(token_account.key()) {
+            return Err(ProgramError::InvalidAccountData);
+        }
+
+        let group_key = find_program_address(&[b"group", class.key()], &ID).0;
+        if group_key.ne(group.key()) {
             return Err(ProgramError::InvalidAccountData);
         }
 
@@ -137,7 +140,7 @@ impl<'info> MintTokenizedRecord<'info> {
         let group_bump = self.derive_group_address_bump()?;
 
         // Check if the group already exists
-        if !Mint::check_initialized(self.accounts.group)? {
+        if !Mint::check_discriminator(self.accounts.group)? {
             // Create the group mint account if needed
             self.create_group_mint_account(&group_bump)?;
             // Initialize the group pointer extension
@@ -171,8 +174,21 @@ impl<'info> MintTokenizedRecord<'info> {
 
         let mut record_data = self.accounts.record.try_borrow_mut_data()?;
 
-        // 1. Update the record to be frozen since the check will be perfomed on the token account
-        unsafe { Record::update_is_frozen_unchecked(&mut record_data, true)? }
+        // 1. Check if the current record is frozen, if it is, we need to freeze the token as well
+        if record_data[IS_FROZEN_OFFSET] == 1 {
+            let seeds = [
+                Seed::from(b"mint"),
+                Seed::from(self.accounts.record.key()),
+                Seed::from(&mint_bump),
+            ];
+
+            FreezeAccount {
+                account: self.accounts.token_account,
+                mint: self.accounts.mint,
+                freeze_authority: self.accounts.mint,
+            }
+            .invoke_signed(&[Signer::from(&seeds)])?;
+        }
 
         // 2. Update the record_owner to be the mint
         record_data[OWNER_OFFSET..OWNER_OFFSET + size_of::<Pubkey>()]
@@ -212,15 +228,39 @@ impl<'info> MintTokenizedRecord<'info> {
 
         let signers = [Signer::from(&seeds)];
 
-        // Create the account with our program as owner
-        CreateAccount {
-            from: self.accounts.payer,
-            to: self.accounts.group,
-            lamports,
-            space: space as u64,
-            owner: &TOKEN_2022_PROGRAM_ID,
+        if self.accounts.group.lamports() > 0 {
+            Allocate {
+                account: self.accounts.group,
+                space: space as u64,
+            }
+            .invoke_signed(&signers)?;
+
+            Assign {
+                account: self.accounts.group,
+                owner: &TOKEN_2022_PROGRAM_ID,
+            }
+            .invoke_signed(&signers)?;
+
+            if self.accounts.group.lamports() < lamports {
+                Transfer {
+                    from: self.accounts.payer,
+                    to: self.accounts.group,
+                    lamports: lamports - self.accounts.group.lamports(),
+                }
+                .invoke()?;
+            }
+        } else {
+            CreateAccount {
+                from: self.accounts.payer,
+                to: self.accounts.group,
+                lamports,
+                space: space as u64,
+                owner: &TOKEN_2022_PROGRAM_ID,
+            }
+            .invoke_signed(&signers)?;
         }
-        .invoke_signed(&signers)
+
+        Ok(())
     }
 
     fn initialize_group_pointer(&self) -> Result<(), ProgramError> {
@@ -242,10 +282,11 @@ impl<'info> MintTokenizedRecord<'info> {
         let signers = [Signer::from(&seeds)];
 
         InitializeGroup {
+            group: self.accounts.group,
             mint: self.accounts.group,
             mint_authority: self.accounts.group,
             update_authority: self.accounts.group.key(),
-            max_size: 100,
+            max_size: u64::MAX,
         }
         .invoke_signed(&signers)
     }
@@ -269,16 +310,17 @@ impl<'info> MintTokenizedRecord<'info> {
             + TOKEN_2022_METADATA_POINTER_LEN
             + TOKEN_2022_MEMBER_POINTER_LEN;
 
+
         // To avoid resizing the mint, we calculate the correct lamports for our token AOT with:
         // 1. `space` - The sum of the above static extension lengths
         // 2. `metadata_data.len()` - The full length of the metadata data
-        // 3. `TOKEN_2022_MEMBER_LEN` - The length of the member extension
         let lamports = Rent::get()?.minimum_balance(
             space
                 + unsafe {
                     Record::get_metadata_len_unchecked(&self.accounts.record.try_borrow_data()?)?
                 }
-                + TOKEN_2022_MEMBER_LEN,
+                + TOKEN_2022_MEMBER_LEN
+                + TOKEN_2022_METADATA_LEN
         );
 
         let seeds = [
@@ -289,15 +331,39 @@ impl<'info> MintTokenizedRecord<'info> {
 
         let signers = [Signer::from(&seeds)];
 
-        // Create the account with our program as owner
-        CreateAccount {
-            from: self.accounts.payer,
-            to: self.accounts.mint,
-            lamports,
-            space: space as u64,
-            owner: &TOKEN_2022_PROGRAM_ID,
+        if self.accounts.mint.lamports() > 0 {
+            Allocate {
+                account: self.accounts.mint,
+                space: space as u64,
+            }
+            .invoke_signed(&signers)?;
+
+            Assign {
+                account: self.accounts.mint,
+                owner: &TOKEN_2022_PROGRAM_ID,
+            }
+            .invoke_signed(&signers)?;
+
+            if self.accounts.mint.lamports() < lamports {
+                Transfer {
+                    from: self.accounts.payer,
+                    to: self.accounts.mint,
+                    lamports: lamports - self.accounts.mint.lamports(),
+                }
+                .invoke()?;
+            }
+        } else {
+            CreateAccount {
+                from: self.accounts.payer,
+                to: self.accounts.mint,
+                lamports,
+                space: space as u64,
+                owner: &TOKEN_2022_PROGRAM_ID,
+            }
+            .invoke_signed(&signers)?;
         }
-        .invoke_signed(&signers)
+
+        Ok(())
     }
 
     fn initialize_permanent_delegate(&self) -> Result<(), ProgramError> {
@@ -358,6 +424,7 @@ impl<'info> MintTokenizedRecord<'info> {
         let signers = [Signer::from(&seeds)];
 
         InitializeMetadata {
+            metadata: self.accounts.mint,
             mint: self.accounts.mint,
             update_authority: self.accounts.mint,
             mint_authority: self.accounts.mint,

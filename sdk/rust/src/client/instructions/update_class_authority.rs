@@ -5,29 +5,27 @@
 //! <https://github.com/codama-idl/codama>
 //!
 
-use crate::types::Metadata;
 use borsh::BorshDeserialize;
 use borsh::BorshSerialize;
+use solana_program::pubkey::Pubkey;
 
 /// Accounts.
 #[derive(Debug)]
-pub struct UpdateRecordTokenizable {
-    /// Record owner or class authority for permissioned classes
+pub struct UpdateClassAuthority {
+    /// Authority used to update a class
     pub authority: solana_program::pubkey::Pubkey,
-    /// Account that will pay of get refunded for the record update
+    /// Account that will pay of get refunded for the class update
     pub payer: solana_program::pubkey::Pubkey,
-    /// Record account to be updated
-    pub record: solana_program::pubkey::Pubkey,
-    /// Class account of the record
+    /// Class account to be updated
     pub class: solana_program::pubkey::Pubkey,
-    /// System Program used to extend our record account
+    /// System Program used to extend our class account
     pub system_program: solana_program::pubkey::Pubkey,
 }
 
-impl UpdateRecordTokenizable {
+impl UpdateClassAuthority {
     pub fn instruction(
         &self,
-        args: UpdateRecordTokenizableInstructionArgs,
+        args: UpdateClassAuthorityInstructionArgs,
     ) -> solana_program::instruction::Instruction {
         self.instruction_with_remaining_accounts(args, &[])
     }
@@ -35,10 +33,10 @@ impl UpdateRecordTokenizable {
     #[allow(clippy::vec_init_then_push)]
     pub fn instruction_with_remaining_accounts(
         &self,
-        args: UpdateRecordTokenizableInstructionArgs,
+        args: UpdateClassAuthorityInstructionArgs,
         remaining_accounts: &[solana_program::instruction::AccountMeta],
     ) -> solana_program::instruction::Instruction {
-        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             self.authority,
             true,
@@ -47,10 +45,6 @@ impl UpdateRecordTokenizable {
             self.payer, true,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            self.record,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             self.class, false,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new_readonly(
@@ -58,7 +52,7 @@ impl UpdateRecordTokenizable {
             false,
         ));
         accounts.extend_from_slice(remaining_accounts);
-        let mut data = borsh::to_vec(&UpdateRecordTokenizableInstructionData::new()).unwrap();
+        let mut data = borsh::to_vec(&UpdateClassAuthorityInstructionData::new()).unwrap();
         let mut args = borsh::to_vec(&args).unwrap();
         data.append(&mut args);
 
@@ -72,17 +66,17 @@ impl UpdateRecordTokenizable {
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct UpdateRecordTokenizableInstructionData {
+pub struct UpdateClassAuthorityInstructionData {
     discriminator: u8,
 }
 
-impl UpdateRecordTokenizableInstructionData {
+impl UpdateClassAuthorityInstructionData {
     pub fn new() -> Self {
-        Self { discriminator: 5 }
+        Self { discriminator: 2 }
     }
 }
 
-impl Default for UpdateRecordTokenizableInstructionData {
+impl Default for UpdateClassAuthorityInstructionData {
     fn default() -> Self {
         Self::new()
     }
@@ -90,68 +84,60 @@ impl Default for UpdateRecordTokenizableInstructionData {
 
 #[derive(BorshSerialize, BorshDeserialize, Clone, Debug, Eq, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct UpdateRecordTokenizableInstructionArgs {
-    pub metadata: Metadata,
+pub struct UpdateClassAuthorityInstructionArgs {
+    pub new_authority: Pubkey,
 }
 
-/// Instruction builder for `UpdateRecordTokenizable`.
+/// Instruction builder for `UpdateClassAuthority`.
 ///
 /// ### Accounts:
 ///
 ///   0. `[writable, signer]` authority
 ///   1. `[writable, signer]` payer
-///   2. `[writable]` record
-///   3. `[]` class
-///   4. `[optional]` system_program (default to `11111111111111111111111111111111`)
+///   2. `[writable]` class
+///   3. `[optional]` system_program (default to `11111111111111111111111111111111`)
 #[derive(Clone, Debug, Default)]
-pub struct UpdateRecordTokenizableBuilder {
+pub struct UpdateClassAuthorityBuilder {
     authority: Option<solana_program::pubkey::Pubkey>,
     payer: Option<solana_program::pubkey::Pubkey>,
-    record: Option<solana_program::pubkey::Pubkey>,
     class: Option<solana_program::pubkey::Pubkey>,
     system_program: Option<solana_program::pubkey::Pubkey>,
-    metadata: Option<Metadata>,
+    new_authority: Option<Pubkey>,
     __remaining_accounts: Vec<solana_program::instruction::AccountMeta>,
 }
 
-impl UpdateRecordTokenizableBuilder {
+impl UpdateClassAuthorityBuilder {
     pub fn new() -> Self {
         Self::default()
     }
-    /// Record owner or class authority for permissioned classes
+    /// Authority used to update a class
     #[inline(always)]
     pub fn authority(&mut self, authority: solana_program::pubkey::Pubkey) -> &mut Self {
         self.authority = Some(authority);
         self
     }
-    /// Account that will pay of get refunded for the record update
+    /// Account that will pay of get refunded for the class update
     #[inline(always)]
     pub fn payer(&mut self, payer: solana_program::pubkey::Pubkey) -> &mut Self {
         self.payer = Some(payer);
         self
     }
-    /// Record account to be updated
-    #[inline(always)]
-    pub fn record(&mut self, record: solana_program::pubkey::Pubkey) -> &mut Self {
-        self.record = Some(record);
-        self
-    }
-    /// Class account of the record
+    /// Class account to be updated
     #[inline(always)]
     pub fn class(&mut self, class: solana_program::pubkey::Pubkey) -> &mut Self {
         self.class = Some(class);
         self
     }
     /// `[optional account, default to '11111111111111111111111111111111']`
-    /// System Program used to extend our record account
+    /// System Program used to extend our class account
     #[inline(always)]
     pub fn system_program(&mut self, system_program: solana_program::pubkey::Pubkey) -> &mut Self {
         self.system_program = Some(system_program);
         self
     }
     #[inline(always)]
-    pub fn metadata(&mut self, metadata: Metadata) -> &mut Self {
-        self.metadata = Some(metadata);
+    pub fn new_authority(&mut self, new_authority: Pubkey) -> &mut Self {
+        self.new_authority = Some(new_authority);
         self
     }
     /// Add an additional account to the instruction.
@@ -174,66 +160,63 @@ impl UpdateRecordTokenizableBuilder {
     }
     #[allow(clippy::clone_on_copy)]
     pub fn instruction(&self) -> solana_program::instruction::Instruction {
-        let accounts = UpdateRecordTokenizable {
+        let accounts = UpdateClassAuthority {
             authority: self.authority.expect("authority is not set"),
             payer: self.payer.expect("payer is not set"),
-            record: self.record.expect("record is not set"),
             class: self.class.expect("class is not set"),
             system_program: self
                 .system_program
                 .unwrap_or(solana_program::pubkey!("11111111111111111111111111111111")),
         };
-        let args = UpdateRecordTokenizableInstructionArgs {
-            metadata: self.metadata.clone().expect("metadata is not set"),
+        let args = UpdateClassAuthorityInstructionArgs {
+            new_authority: self
+                .new_authority
+                .clone()
+                .expect("new_authority is not set"),
         };
 
         accounts.instruction_with_remaining_accounts(args, &self.__remaining_accounts)
     }
 }
 
-/// `update_record_tokenizable` CPI accounts.
-pub struct UpdateRecordTokenizableCpiAccounts<'a, 'b> {
-    /// Record owner or class authority for permissioned classes
+/// `update_class_authority` CPI accounts.
+pub struct UpdateClassAuthorityCpiAccounts<'a, 'b> {
+    /// Authority used to update a class
     pub authority: &'b solana_program::account_info::AccountInfo<'a>,
-    /// Account that will pay of get refunded for the record update
+    /// Account that will pay of get refunded for the class update
     pub payer: &'b solana_program::account_info::AccountInfo<'a>,
-    /// Record account to be updated
-    pub record: &'b solana_program::account_info::AccountInfo<'a>,
-    /// Class account of the record
+    /// Class account to be updated
     pub class: &'b solana_program::account_info::AccountInfo<'a>,
-    /// System Program used to extend our record account
+    /// System Program used to extend our class account
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
 }
 
-/// `update_record_tokenizable` CPI instruction.
-pub struct UpdateRecordTokenizableCpi<'a, 'b> {
+/// `update_class_authority` CPI instruction.
+pub struct UpdateClassAuthorityCpi<'a, 'b> {
     /// The program to invoke.
     pub __program: &'b solana_program::account_info::AccountInfo<'a>,
-    /// Record owner or class authority for permissioned classes
+    /// Authority used to update a class
     pub authority: &'b solana_program::account_info::AccountInfo<'a>,
-    /// Account that will pay of get refunded for the record update
+    /// Account that will pay of get refunded for the class update
     pub payer: &'b solana_program::account_info::AccountInfo<'a>,
-    /// Record account to be updated
-    pub record: &'b solana_program::account_info::AccountInfo<'a>,
-    /// Class account of the record
+    /// Class account to be updated
     pub class: &'b solana_program::account_info::AccountInfo<'a>,
-    /// System Program used to extend our record account
+    /// System Program used to extend our class account
     pub system_program: &'b solana_program::account_info::AccountInfo<'a>,
     /// The arguments for the instruction.
-    pub __args: UpdateRecordTokenizableInstructionArgs,
+    pub __args: UpdateClassAuthorityInstructionArgs,
 }
 
-impl<'a, 'b> UpdateRecordTokenizableCpi<'a, 'b> {
+impl<'a, 'b> UpdateClassAuthorityCpi<'a, 'b> {
     pub fn new(
         program: &'b solana_program::account_info::AccountInfo<'a>,
-        accounts: UpdateRecordTokenizableCpiAccounts<'a, 'b>,
-        args: UpdateRecordTokenizableInstructionArgs,
+        accounts: UpdateClassAuthorityCpiAccounts<'a, 'b>,
+        args: UpdateClassAuthorityInstructionArgs,
     ) -> Self {
         Self {
             __program: program,
             authority: accounts.authority,
             payer: accounts.payer,
-            record: accounts.record,
             class: accounts.class,
             system_program: accounts.system_program,
             __args: args,
@@ -273,7 +256,7 @@ impl<'a, 'b> UpdateRecordTokenizableCpi<'a, 'b> {
             bool,
         )],
     ) -> solana_program::entrypoint::ProgramResult {
-        let mut accounts = Vec::with_capacity(5 + remaining_accounts.len());
+        let mut accounts = Vec::with_capacity(4 + remaining_accounts.len());
         accounts.push(solana_program::instruction::AccountMeta::new(
             *self.authority.key,
             true,
@@ -283,10 +266,6 @@ impl<'a, 'b> UpdateRecordTokenizableCpi<'a, 'b> {
             true,
         ));
         accounts.push(solana_program::instruction::AccountMeta::new(
-            *self.record.key,
-            false,
-        ));
-        accounts.push(solana_program::instruction::AccountMeta::new_readonly(
             *self.class.key,
             false,
         ));
@@ -301,7 +280,7 @@ impl<'a, 'b> UpdateRecordTokenizableCpi<'a, 'b> {
                 is_writable: remaining_account.2,
             })
         });
-        let mut data = borsh::to_vec(&UpdateRecordTokenizableInstructionData::new()).unwrap();
+        let mut data = borsh::to_vec(&UpdateClassAuthorityInstructionData::new()).unwrap();
         let mut args = borsh::to_vec(&self.__args).unwrap();
         data.append(&mut args);
 
@@ -310,11 +289,10 @@ impl<'a, 'b> UpdateRecordTokenizableCpi<'a, 'b> {
             accounts,
             data,
         };
-        let mut account_infos = Vec::with_capacity(6 + remaining_accounts.len());
+        let mut account_infos = Vec::with_capacity(5 + remaining_accounts.len());
         account_infos.push(self.__program.clone());
         account_infos.push(self.authority.clone());
         account_infos.push(self.payer.clone());
-        account_infos.push(self.record.clone());
         account_infos.push(self.class.clone());
         account_infos.push(self.system_program.clone());
         remaining_accounts
@@ -329,35 +307,33 @@ impl<'a, 'b> UpdateRecordTokenizableCpi<'a, 'b> {
     }
 }
 
-/// Instruction builder for `UpdateRecordTokenizable` via CPI.
+/// Instruction builder for `UpdateClassAuthority` via CPI.
 ///
 /// ### Accounts:
 ///
 ///   0. `[writable, signer]` authority
 ///   1. `[writable, signer]` payer
-///   2. `[writable]` record
-///   3. `[]` class
-///   4. `[]` system_program
+///   2. `[writable]` class
+///   3. `[]` system_program
 #[derive(Clone, Debug)]
-pub struct UpdateRecordTokenizableCpiBuilder<'a, 'b> {
-    instruction: Box<UpdateRecordTokenizableCpiBuilderInstruction<'a, 'b>>,
+pub struct UpdateClassAuthorityCpiBuilder<'a, 'b> {
+    instruction: Box<UpdateClassAuthorityCpiBuilderInstruction<'a, 'b>>,
 }
 
-impl<'a, 'b> UpdateRecordTokenizableCpiBuilder<'a, 'b> {
+impl<'a, 'b> UpdateClassAuthorityCpiBuilder<'a, 'b> {
     pub fn new(program: &'b solana_program::account_info::AccountInfo<'a>) -> Self {
-        let instruction = Box::new(UpdateRecordTokenizableCpiBuilderInstruction {
+        let instruction = Box::new(UpdateClassAuthorityCpiBuilderInstruction {
             __program: program,
             authority: None,
             payer: None,
-            record: None,
             class: None,
             system_program: None,
-            metadata: None,
+            new_authority: None,
             __remaining_accounts: Vec::new(),
         });
         Self { instruction }
     }
-    /// Record owner or class authority for permissioned classes
+    /// Authority used to update a class
     #[inline(always)]
     pub fn authority(
         &mut self,
@@ -366,28 +342,19 @@ impl<'a, 'b> UpdateRecordTokenizableCpiBuilder<'a, 'b> {
         self.instruction.authority = Some(authority);
         self
     }
-    /// Account that will pay of get refunded for the record update
+    /// Account that will pay of get refunded for the class update
     #[inline(always)]
     pub fn payer(&mut self, payer: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.payer = Some(payer);
         self
     }
-    /// Record account to be updated
-    #[inline(always)]
-    pub fn record(
-        &mut self,
-        record: &'b solana_program::account_info::AccountInfo<'a>,
-    ) -> &mut Self {
-        self.instruction.record = Some(record);
-        self
-    }
-    /// Class account of the record
+    /// Class account to be updated
     #[inline(always)]
     pub fn class(&mut self, class: &'b solana_program::account_info::AccountInfo<'a>) -> &mut Self {
         self.instruction.class = Some(class);
         self
     }
-    /// System Program used to extend our record account
+    /// System Program used to extend our class account
     #[inline(always)]
     pub fn system_program(
         &mut self,
@@ -397,8 +364,8 @@ impl<'a, 'b> UpdateRecordTokenizableCpiBuilder<'a, 'b> {
         self
     }
     #[inline(always)]
-    pub fn metadata(&mut self, metadata: Metadata) -> &mut Self {
-        self.instruction.metadata = Some(metadata);
+    pub fn new_authority(&mut self, new_authority: Pubkey) -> &mut Self {
+        self.instruction.new_authority = Some(new_authority);
         self
     }
     /// Add an additional account to the instruction.
@@ -442,21 +409,19 @@ impl<'a, 'b> UpdateRecordTokenizableCpiBuilder<'a, 'b> {
         &self,
         signers_seeds: &[&[&[u8]]],
     ) -> solana_program::entrypoint::ProgramResult {
-        let args = UpdateRecordTokenizableInstructionArgs {
-            metadata: self
+        let args = UpdateClassAuthorityInstructionArgs {
+            new_authority: self
                 .instruction
-                .metadata
+                .new_authority
                 .clone()
-                .expect("metadata is not set"),
+                .expect("new_authority is not set"),
         };
-        let instruction = UpdateRecordTokenizableCpi {
+        let instruction = UpdateClassAuthorityCpi {
             __program: self.instruction.__program,
 
             authority: self.instruction.authority.expect("authority is not set"),
 
             payer: self.instruction.payer.expect("payer is not set"),
-
-            record: self.instruction.record.expect("record is not set"),
 
             class: self.instruction.class.expect("class is not set"),
 
@@ -474,14 +439,13 @@ impl<'a, 'b> UpdateRecordTokenizableCpiBuilder<'a, 'b> {
 }
 
 #[derive(Clone, Debug)]
-struct UpdateRecordTokenizableCpiBuilderInstruction<'a, 'b> {
+struct UpdateClassAuthorityCpiBuilderInstruction<'a, 'b> {
     __program: &'b solana_program::account_info::AccountInfo<'a>,
     authority: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     payer: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    record: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     class: Option<&'b solana_program::account_info::AccountInfo<'a>>,
     system_program: Option<&'b solana_program::account_info::AccountInfo<'a>>,
-    metadata: Option<Metadata>,
+    new_authority: Option<Pubkey>,
     /// Additional instruction accounts `(AccountInfo, is_writable, is_signer)`.
     __remaining_accounts: Vec<(
         &'b solana_program::account_info::AccountInfo<'a>,

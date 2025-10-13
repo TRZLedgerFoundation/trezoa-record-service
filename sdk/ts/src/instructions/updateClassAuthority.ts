@@ -16,9 +16,8 @@ import {
 } from '@metaplex-foundation/umi';
 import {
   Serializer,
-  bytes,
-  i64,
   mapSerializer,
+  publicKey as publicKeySerializer,
   struct,
   u8,
 } from '@metaplex-foundation/umi/serializers';
@@ -27,72 +26,61 @@ import {
   ResolvedAccountsWithIndices,
   getAccountMetasAndSigners,
 } from '../shared';
-import { Metadata, MetadataArgs, getMetadataSerializer } from '../types';
 
 // Accounts.
-export type CreateRecordTokenizableInstructionAccounts = {
-  /** Owner of the new record */
-  owner: Signer;
-  /** Account that will pay for the record account */
+export type UpdateClassAuthorityInstructionAccounts = {
+  /** Authority used to update a class */
+  authority: Signer;
+  /** Account that will pay of get refunded for the class update */
   payer: Signer;
-  /** Class account for the record to be created */
+  /** Class account to be updated */
   class: PublicKey | Pda;
-  /** Record account to be created */
-  record: PublicKey | Pda;
-  /** System Program used to create our record account */
+  /** System Program used to extend our class account */
   systemProgram?: PublicKey | Pda;
-  /** Optional authority for permissioned classes */
-  authority?: Signer;
 };
 
 // Data.
-export type CreateRecordTokenizableInstructionData = {
+export type UpdateClassAuthorityInstructionData = {
   discriminator: number;
-  expiration: bigint;
-  seed: Uint8Array;
-  metadata: Metadata;
+  newAuthority: PublicKey;
 };
 
-export type CreateRecordTokenizableInstructionDataArgs = {
-  expiration: number | bigint;
-  seed: Uint8Array;
-  metadata: MetadataArgs;
+export type UpdateClassAuthorityInstructionDataArgs = {
+  newAuthority: PublicKey;
 };
 
-export function getCreateRecordTokenizableInstructionDataSerializer(): Serializer<
-  CreateRecordTokenizableInstructionDataArgs,
-  CreateRecordTokenizableInstructionData
+export function getUpdateClassAuthorityInstructionDataSerializer(): Serializer<
+  UpdateClassAuthorityInstructionDataArgs,
+  UpdateClassAuthorityInstructionData
 > {
   return mapSerializer<
-    CreateRecordTokenizableInstructionDataArgs,
+    UpdateClassAuthorityInstructionDataArgs,
     any,
-    CreateRecordTokenizableInstructionData
+    UpdateClassAuthorityInstructionData
   >(
-    struct<CreateRecordTokenizableInstructionData>(
+    struct<UpdateClassAuthorityInstructionData>(
       [
         ['discriminator', u8()],
-        ['expiration', i64()],
-        ['seed', bytes({ size: u8() })],
-        ['metadata', getMetadataSerializer()],
+        ['newAuthority', publicKeySerializer()],
       ],
-      { description: 'CreateRecordTokenizableInstructionData' }
+      { description: 'UpdateClassAuthorityInstructionData' }
     ),
-    (value) => ({ ...value, discriminator: 4 })
+    (value) => ({ ...value, discriminator: 2 })
   ) as Serializer<
-    CreateRecordTokenizableInstructionDataArgs,
-    CreateRecordTokenizableInstructionData
+    UpdateClassAuthorityInstructionDataArgs,
+    UpdateClassAuthorityInstructionData
   >;
 }
 
 // Args.
-export type CreateRecordTokenizableInstructionArgs =
-  CreateRecordTokenizableInstructionDataArgs;
+export type UpdateClassAuthorityInstructionArgs =
+  UpdateClassAuthorityInstructionDataArgs;
 
 // Instruction.
-export function createRecordTokenizable(
+export function updateClassAuthority(
   context: Pick<Context, 'programs'>,
-  input: CreateRecordTokenizableInstructionAccounts &
-    CreateRecordTokenizableInstructionArgs
+  input: UpdateClassAuthorityInstructionAccounts &
+    UpdateClassAuthorityInstructionArgs
 ): TransactionBuilder {
   // Program ID.
   const programId = context.programs.getPublicKey(
@@ -102,10 +90,10 @@ export function createRecordTokenizable(
 
   // Accounts.
   const resolvedAccounts = {
-    owner: {
+    authority: {
       index: 0,
-      isWritable: false as boolean,
-      value: input.owner ?? null,
+      isWritable: true as boolean,
+      value: input.authority ?? null,
     },
     payer: {
       index: 1,
@@ -117,25 +105,15 @@ export function createRecordTokenizable(
       isWritable: true as boolean,
       value: input.class ?? null,
     },
-    record: {
-      index: 3,
-      isWritable: true as boolean,
-      value: input.record ?? null,
-    },
     systemProgram: {
-      index: 4,
+      index: 3,
       isWritable: false as boolean,
       value: input.systemProgram ?? null,
-    },
-    authority: {
-      index: 5,
-      isWritable: false as boolean,
-      value: input.authority ?? null,
     },
   } satisfies ResolvedAccountsWithIndices;
 
   // Arguments.
-  const resolvedArgs: CreateRecordTokenizableInstructionArgs = { ...input };
+  const resolvedArgs: UpdateClassAuthorityInstructionArgs = { ...input };
 
   // Default values.
   if (!resolvedAccounts.systemProgram.value) {
@@ -159,8 +137,8 @@ export function createRecordTokenizable(
   );
 
   // Data.
-  const data = getCreateRecordTokenizableInstructionDataSerializer().serialize(
-    resolvedArgs as CreateRecordTokenizableInstructionDataArgs
+  const data = getUpdateClassAuthorityInstructionDataSerializer().serialize(
+    resolvedArgs as UpdateClassAuthorityInstructionDataArgs
   );
 
   // Bytes Created On Chain.

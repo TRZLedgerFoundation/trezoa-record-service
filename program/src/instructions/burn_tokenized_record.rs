@@ -1,6 +1,6 @@
 use crate::{
     state::{OwnerType, Record},
-    token2022::{BurnChecked, CloseAccount, Token},
+    token2022::{BurnChecked, CloseAccount, ThawAccount, Token},
     utils::Context,
 };
 #[cfg(not(feature = "perf"))]
@@ -22,7 +22,7 @@ use pinocchio::{
 ///
 /// # Accounts
 /// 1. `authority` - The account that has permission to burn the record token (must be a signer)
-/// 2. `payer` - The account that will pay for the record account
+/// 2. `destination` - The account that will get refunded for the record account
 /// 2. `mint` - The mint account of the record token
 /// 3. `token_account` - The token account of the record token
 /// 4. `record` - The record account to be deleted
@@ -34,7 +34,7 @@ use pinocchio::{
 ///    a. The record owner, or
 ///    b. if the class is permissioned, the authority must be the permissioned authority
 pub struct BurnTokenizedRecordAccounts<'info> {
-    payer: &'info AccountInfo,
+    destination: &'info AccountInfo,
     record: &'info AccountInfo,
     mint: &'info AccountInfo,
     token_account: &'info AccountInfo,
@@ -44,7 +44,7 @@ impl<'info> TryFrom<&'info [AccountInfo]> for BurnTokenizedRecordAccounts<'info>
     type Error = ProgramError;
 
     fn try_from(accounts: &'info [AccountInfo]) -> Result<Self, Self::Error> {
-        let [authority, payer, mint, token_account, record, _token_2022_program, rest @ ..] =
+        let [authority, destination, mint, token_account, record, _token_2022_program, rest @ ..] =
             accounts
         else {
             return Err(ProgramError::NotEnoughAccountKeys);
@@ -60,7 +60,7 @@ impl<'info> TryFrom<&'info [AccountInfo]> for BurnTokenizedRecordAccounts<'info>
         )?;
 
         Ok(Self {
-            payer,
+            destination,
             record,
             mint,
             token_account,
@@ -105,6 +105,19 @@ impl<'info> BurnTokenizedRecord<'info> {
 
         let signers = [Signer::from(&seeds)];
 
+        let is_frozen = unsafe {
+            Token::get_is_frozen_unchecked(&self.accounts.token_account.try_borrow_data()?)?
+        };
+
+        if is_frozen {
+            ThawAccount {
+                mint: self.accounts.mint,
+                account: self.accounts.token_account,
+                freeze_authority: self.accounts.mint,
+            }
+            .invoke_signed(&signers)?;
+        }
+
         // Burn the mint
         BurnChecked {
             mint: self.accounts.mint,
@@ -118,7 +131,7 @@ impl<'info> BurnTokenizedRecord<'info> {
         // Close the mint account
         CloseAccount {
             account: self.accounts.mint,
-            destination: self.accounts.payer,
+            destination: self.accounts.destination,
             authority: self.accounts.mint,
         }
         .invoke_signed(&signers)?;
@@ -130,7 +143,7 @@ impl<'info> BurnTokenizedRecord<'info> {
         unsafe {
             Record::update_is_frozen_unchecked(
                 &mut self.accounts.record.try_borrow_mut_data()?,
-                false,
+                is_frozen,
             )?;
             Record::update_owner_unchecked(
                 &mut self.accounts.record.try_borrow_mut_data()?,

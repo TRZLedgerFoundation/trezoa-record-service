@@ -12,17 +12,13 @@ use crate::{
     utils::{write_bytes, UNINIT_BYTE},
 };
 
-/// Initializes a Mint Close Authority.
+/// Transfers tokens between accounts.
 ///
 /// ### Accounts:
-///  0. `[writable]` The source account.
+///  0. `[WRITE]` The source account.
 ///  1. `[]` The token mint.
-///  2. `[writable]` The destination account.
-///  3. `[signer]` The source account's owner/delegate.
-///
-/// ### Data:
-///  0. amount (u64)
-///  1. decimals (u8)
+///  2. `[WRITE]` The destination account.
+///  3. `[SIGNER]` The source account's owner/delegate.
 pub struct TransferChecked<'a> {
     /// Mint Account.
     pub source: &'a AccountInfo,
@@ -38,14 +34,14 @@ const AMOUNT_OFFSET: usize = DISCRIMINATOR_OFFSET + size_of::<u8>();
 const DECIMALS_OFFSET: usize = AMOUNT_OFFSET + size_of::<u64>();
 
 impl TransferChecked<'_> {
-    const DISCRIMINATOR: u8 = 0x0c;
-
     #[inline(always)]
     pub fn invoke(&self) -> ProgramResult {
         self.invoke_signed(&[])
     }
 
     pub fn invoke_signed(&self, signers: &[Signer]) -> ProgramResult {
+        const DISCRIMINATOR: u8 = 0x0c;
+
         // Account metadata
         let account_metas: [AccountMeta; 4] = [
             AccountMeta::writable(self.source.key()),
@@ -62,7 +58,7 @@ impl TransferChecked<'_> {
 
         write_bytes(
             &mut instruction_data[DISCRIMINATOR_OFFSET..],
-            &[Self::DISCRIMINATOR],
+            &[DISCRIMINATOR],
         );
 
         write_bytes(

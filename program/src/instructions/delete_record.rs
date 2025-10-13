@@ -1,6 +1,6 @@
-use crate::{constants::ONE_LAMPORT_RENT, state::Record, utils::Context};
+use crate::{state::Record, utils::Context};
 #[cfg(not(feature = "perf"))]
-use pinocchio::log::sol_log;
+use pinocchio::{log::sol_log, sysvars::{Sysvar, rent::Rent}};
 use pinocchio::{account_info::AccountInfo, program_error::ProgramError, ProgramResult};
 
 /// DeleteRecord instruction.
@@ -14,16 +14,17 @@ use pinocchio::{account_info::AccountInfo, program_error::ProgramError, ProgramR
 ///
 /// # Accounts
 /// 1. `authority` - The account that has permission to delete the record (must be a signer)
-/// 2. `payer` - The account that will pay for the record account
+/// 2. `payer` - The account that will get refunded for the record account
 /// 3. `record` - The record account to be deleted
 /// 4. `class` - [optional] The class of the record to be deleted
+/// 5. `token2022_program` - [optional] The token2022 program to be used to close the mint account
+/// 6. `mint` - [optional] The mint of the record to be deleted
 ///
 /// # Security
 /// 1. The authority must be either:
 ///    a. The record owner, or
 ///    b. if the class is permissioned, the authority can be the permissioned authority
 pub struct DeleteRecordAccounts<'info> {
-    _authority: &'info AccountInfo,
     payer: &'info AccountInfo,
     record: &'info AccountInfo,
 }
@@ -32,15 +33,14 @@ impl<'info> TryFrom<&'info [AccountInfo]> for DeleteRecordAccounts<'info> {
     type Error = ProgramError;
 
     fn try_from(accounts: &'info [AccountInfo]) -> Result<Self, Self::Error> {
-        let [_authority, payer, record, rest @ ..] = accounts else {
+        let [authority, payer, record, rest @ ..] = accounts else {
             return Err(ProgramError::NotEnoughAccountKeys);
         };
 
         // Check if authority is the record owner or has a delegate
-        Record::check_owner_or_delegate(record, rest.first(), _authority)?;
+        Record::check_owner_or_delegate_or_deleted(record, rest.first(), authority, rest.last())?;
 
         Ok(Self {
-            _authority,
             payer,
             record,
         })
@@ -73,16 +73,6 @@ impl<'info> DeleteRecord<'info> {
         // Safety: The account has already been validated
         unsafe {
             Record::delete_record_unchecked(self.accounts.record, self.accounts.payer)?;
-
-            // Refund the payer of all the lamports
-            self.accounts
-                .payer
-                .borrow_mut_lamports_unchecked()
-                .checked_add(*self.accounts.record.borrow_lamports_unchecked())
-                .and_then(|x| x.checked_sub(ONE_LAMPORT_RENT))
-                .ok_or(ProgramError::InvalidAccountData)?;
-
-            *self.accounts.record.borrow_mut_lamports_unchecked() = ONE_LAMPORT_RENT;
         }
 
         Ok(())

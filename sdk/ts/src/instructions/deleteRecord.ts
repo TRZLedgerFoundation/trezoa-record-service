@@ -36,6 +36,10 @@ export type DeleteRecordInstructionAccounts = {
   record: PublicKey | Pda;
   /** Class account of the record */
   class?: PublicKey | Pda;
+  /** Token2022 Program used to close the mint account */
+  token2022Program?: PublicKey | Pda;
+  /** Mint account for the tokenized record */
+  mint?: PublicKey | Pda;
 };
 
 // Data.
@@ -55,7 +59,7 @@ export function getDeleteRecordInstructionDataSerializer(): Serializer<
     struct<DeleteRecordInstructionData>([['discriminator', u8()]], {
       description: 'DeleteRecordInstructionData',
     }),
-    (value) => ({ ...value, discriminator: 6 })
+    (value) => ({ ...value, discriminator: 8 })
   ) as Serializer<DeleteRecordInstructionDataArgs, DeleteRecordInstructionData>;
 }
 
@@ -92,6 +96,12 @@ export function deleteRecord(
       isWritable: false as boolean,
       value: input.class ?? null,
     },
+    token2022Program: {
+      index: 4,
+      isWritable: false as boolean,
+      value: input.token2022Program ?? null,
+    },
+    mint: { index: 5, isWritable: true as boolean, value: input.mint ?? null },
   } satisfies ResolvedAccountsWithIndices;
 
   // Accounts in order.
