@@ -1,6 +1,6 @@
 import * as program from "../sdk/ts/src/index";
 import { LiteSVM } from "litesvm";
-import { createSolanaClient, createTransaction, generateKeyPairSigner, getExplorerLink, getProgramDerivedAddress, getSignatureFromTransaction, KeyPairSigner, signTransactionMessageWithSigners } from "gill";
+import { createTrezoaClient, createTransaction, generateKeyPairSigner, getExplorerLink, getProgramDerivedAddress, getSignatureFromTransaction, KeyPairSigner, signTransactionMessageWithSigners } from "gill";
 
 describe('test', () => {
     // Generate the keypair first
@@ -15,7 +15,7 @@ describe('test', () => {
         // Get the address from the public key for PDA derivation
         const name = "twitter";
         classAddress = (await getProgramDerivedAddress({
-            programAddress: program.SOLANA_RECORD_SERVICE_PROGRAM_ADDRESS,
+            programAddress: program.TREZOA_RECORD_SERVICE_PROGRAM_ADDRESS,
             seeds: [
                 "class",
                 authority.address.substring(0,32),
@@ -23,7 +23,7 @@ describe('test', () => {
             ]
         }))[0];
 
-        const client = createSolanaClient({
+        const client = createTrezoaClient({
             urlOrMoniker: "http://localhost:8899",
         });
         

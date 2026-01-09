@@ -1,5 +1,5 @@
-import { renderJavaScriptUmiVisitor, renderJavaScriptVisitor, renderRustVisitor } from '@codama/renderers';
-import { accountNode, arrayTypeNode, arrayValueNode, booleanTypeNode, bytesTypeNode, constantDiscriminatorNode, constantValueNode, createFromRoot, definedTypeLinkNode, definedTypeNode, instructionAccountNode, instructionArgumentNode, instructionNode, numberTypeNode, numberValueNode, optionTypeNode, prefixedCountNode, programNode, publicKeyTypeNode, publicKeyValueNode, REGISTERED_COUNT_NODE_KINDS, rootNode, sizeDiscriminatorNode, sizePrefixTypeNode, stringTypeNode, stringValueNode, structFieldTypeNode, structTypeNode, tupleTypeNode, tupleValueNode } from "codama"
+import { renderJavaScriptUmiVisitor, renderJavaScriptVisitor, renderRustVisitor } from '@codoma/renderers';
+import { accountNode, arrayTypeNode, arrayValueNode, booleanTypeNode, bytesTypeNode, constantDiscriminatorNode, constantValueNode, createFromRoot, definedTypeLinkNode, definedTypeNode, instructionAccountNode, instructionArgumentNode, instructionNode, numberTypeNode, numberValueNode, optionTypeNode, prefixedCountNode, programNode, publicKeyTypeNode, publicKeyValueNode, REGISTERED_COUNT_NODE_KINDS, rootNode, sizeDiscriminatorNode, sizePrefixTypeNode, stringTypeNode, stringValueNode, structFieldTypeNode, structTypeNode, tupleTypeNode, tupleValueNode } from "codoma"
 import path from "path";
 import fs from "fs";
 
@@ -13,7 +13,7 @@ const typescriptClientsDir = path.join(
 
 const root = rootNode(
     programNode({
-        name: "solana-record-service",
+        name: "trezoa-record-service",
         publicKey: "srsUi2TVUUCyGcZdopxJauk8ZBzgAaHHZCVUhm5ifPa",
         version: "1.1.0",
         accounts: [
@@ -928,9 +928,9 @@ function preserveConfigFiles() {
     };
   }
 
-const codama = createFromRoot(root)
+const codoma = createFromRoot(root)
 
 const configPreserver = preserveConfigFiles();
 
-codama.accept(renderJavaScriptUmiVisitor('sdk/ts/src', { formatCode: true }));
-codama.accept(renderRustVisitor('sdk/rust/src/client', { crateFolder: 'sdk/rust/', formatCode: true }));
+codoma.accept(renderJavaScriptUmiVisitor('sdk/ts/src', { formatCode: true }));
+codoma.accept(renderRustVisitor('sdk/rust/src/client', { crateFolder: 'sdk/rust/', formatCode: true }));

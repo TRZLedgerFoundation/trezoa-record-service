@@ -6,4 +6,4 @@ members = [
 resolver = "2"
 
 [workspace.dependencies]
-solana-record-service-client = { path = "sdk/rust"}
+trezoa-record-service-client = { path = "sdk/rust"}

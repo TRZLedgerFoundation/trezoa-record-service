@@ -7,7 +7,7 @@ use pinocchio::{
 
 use crate::token2022::constants::TOKEN_2022_PROGRAM_ID;
 
-/// Close an account by transferring all its SOL to the destination account.
+/// Close an account by transferring all its TRZ to the destination account.
 ///
 /// ### Accounts:
 ///   0. `[WRITE]` The account to close.

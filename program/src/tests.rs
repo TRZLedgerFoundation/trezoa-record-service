@@ -1,17 +1,17 @@
 use borsh::de::BorshDeserialize;
 use borsh::ser::BorshSerialize;
 use core::str::FromStr;
-use solana_account::{Account, WritableAccount};
-use solana_program::program_error::ProgramError;
+use trezoa_account::{Account, WritableAccount};
+use trezoa_program::program_error::ProgramError;
 
 use kaigan::types::{RemainderStr, RemainderVec, U8PrefixString, U8PrefixVec};
 use mollusk_svm::{program::keyed_account_for_system_program, result::Check, Mollusk};
-use solana_pubkey::Pubkey;
+use trezoa_pubkey::Pubkey;
 
-use solana_record_service_client::{
+use trezoa_record_service_client::{
     accounts::*,
     instructions::*,
-    programs::SOLANA_RECORD_SERVICE_ID,
+    programs::TREZOA_RECORD_SERVICE_ID,
     types::{Metadata, AdditionalMetadata},
 };
 
@@ -127,7 +127,7 @@ fn keyed_account_for_class(
 ) -> (Pubkey, Account) {
     let (address, _bump) = Pubkey::find_program_address(
         &[b"class", &authority.as_ref(), name.as_ref()],
-        &SOLANA_RECORD_SERVICE_ID,
+        &TREZOA_RECORD_SERVICE_ID,
     );
 
     let class_account_data = Class {
@@ -163,7 +163,7 @@ fn keyed_account_for_record(
 ) -> (Pubkey, Account) {
     let (address, _bump) = Pubkey::find_program_address(
         &[b"record", &class.as_ref(), seed.as_ref()],
-        &SOLANA_RECORD_SERVICE_ID,
+        &TREZOA_RECORD_SERVICE_ID,
     );
     let record_account_data = Record {
         discriminator: 2,
@@ -211,7 +211,7 @@ fn keyed_account_for_record_with_metadata(
 ) -> (Pubkey, Account) {
     let (address, _bump) = Pubkey::find_program_address(
         &[b"record", &class.as_ref(), name.as_ref()],
-        &SOLANA_RECORD_SERVICE_ID,
+        &TREZOA_RECORD_SERVICE_ID,
     );
     let record_account_data = Record {
         discriminator: 2,
@@ -260,7 +260,7 @@ fn keyed_account_for_record_with_metadata_and_additional_metadata(
 ) -> (Pubkey, Account) {
     let (address, _bump) = Pubkey::find_program_address(
         &[b"record", &class.as_ref(), name.as_ref()],
-        &SOLANA_RECORD_SERVICE_ID,
+        &TREZOA_RECORD_SERVICE_ID,
     );
     let record_account_data = Record {
         discriminator: 2,
@@ -304,7 +304,7 @@ fn keyed_account_for_record_with_metadata_and_multiple_additional_metadata(
 ) -> (Pubkey, Account) {
     let (address, _bump) = Pubkey::find_program_address(
         &[b"record", &class.as_ref(), name.as_ref()],
-        &SOLANA_RECORD_SERVICE_ID,
+        &TREZOA_RECORD_SERVICE_ID,
     );
     let record_account_data = Record {
         discriminator: 2,
@@ -385,7 +385,7 @@ const MINT_GROUP_MEMBER_EXTENSION: &[u8] = &[
 
 fn keyed_account_for_mint(record: Pubkey) -> (Pubkey, Account) {
     let (address, _bump) =
-        Pubkey::find_program_address(&[b"mint", &record.as_ref()], &SOLANA_RECORD_SERVICE_ID);
+        Pubkey::find_program_address(&[b"mint", &record.as_ref()], &TREZOA_RECORD_SERVICE_ID);
 
     // Base data (82) + 84 (padding + account_type) + Extensions (36 + 36 + 68) + Metadata (83 + name.len() + uri.len())
     let total_size = MINT_DATA_WITH_EXTENSIONS.len()
@@ -455,7 +455,7 @@ const MINT_GROUP_MEMBER_EXTENSION_UPDATED: &[u8] = &[
 
 fn keyed_account_for_updated_mint(record: Pubkey) -> (Pubkey, Account) {
     let (address, _bump) =
-        Pubkey::find_program_address(&[b"mint", &record.as_ref()], &SOLANA_RECORD_SERVICE_ID);
+        Pubkey::find_program_address(&[b"mint", &record.as_ref()], &TREZOA_RECORD_SERVICE_ID);
 
     // Base data (82) + 84 (padding + account_type) + Extensions (36 + 36 + 68) + Metadata (83 + name.len() + uri.len())
     let total_size = MINT_DATA_WITH_EXTENSIONS.len()
@@ -519,7 +519,7 @@ const MINT_METADATA_EXTENSION_WITH_ADDITIONAL_METADATA: &[u8; 111] = &[
 
 fn keyed_account_for_mint_with_additional_metadata(record: Pubkey) -> (Pubkey, Account) {
     let (address, _bump) =
-        Pubkey::find_program_address(&[b"mint", &record.as_ref()], &SOLANA_RECORD_SERVICE_ID);
+        Pubkey::find_program_address(&[b"mint", &record.as_ref()], &TREZOA_RECORD_SERVICE_ID);
 
     let total_size = MINT_DATA_WITH_EXTENSIONS.len()
         + MINT_CLOSE_AUTHORITY_EXTENSION.len()
@@ -584,7 +584,7 @@ const MINT_METADATA_EXTENSIONE_WITH_MULTIPLE_ADDITIONAL_METADATA: &[u8; 143] = &
 
 fn keyed_account_for_mint_with_multiple_additional_metadata(record: Pubkey) -> (Pubkey, Account) {
     let (address, _bump) =
-        Pubkey::find_program_address(&[b"mint", &record.as_ref()], &SOLANA_RECORD_SERVICE_ID);
+        Pubkey::find_program_address(&[b"mint", &record.as_ref()], &TREZOA_RECORD_SERVICE_ID);
 
     let total_size = MINT_DATA_WITH_EXTENSIONS.len()
         + MINT_CLOSE_AUTHORITY_EXTENSION.len()
@@ -662,7 +662,7 @@ const MINT_GROUP_EXTENSION: &[u8] = &[
 
 fn keyed_account_for_group(class: Pubkey) -> (Pubkey, Account) {
     let (address, _bump) =
-        Pubkey::find_program_address(&[b"group", &class.as_ref()], &SOLANA_RECORD_SERVICE_ID);
+        Pubkey::find_program_address(&[b"group", &class.as_ref()], &TREZOA_RECORD_SERVICE_ID);
 
     let total_size = GROUP_MINT_DATA_WITH_EXTENSIONS.len()
         + MINT_GROUP_POINTER_EXTENSION.len()
@@ -763,8 +763,8 @@ fn create_class() {
     });
 
     let mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     mollusk.process_and_validate_instruction(
@@ -806,8 +806,8 @@ fn update_class_metadata() {
     });
 
     let mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     mollusk.process_and_validate_instruction(
@@ -848,8 +848,8 @@ fn update_class_metadata_incorrect_authority() {
     });
 
     let mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     mollusk.process_and_validate_instruction(
@@ -882,8 +882,8 @@ fn update_class_authority() {
     }.instruction(UpdateClassAuthorityInstructionArgs { new_authority });
 
     let mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     // Class Updated
@@ -916,8 +916,8 @@ fn update_class_frozen() {
         .instruction(FreezeClassInstructionArgs { is_frozen: true });
 
     let mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     mollusk.process_and_validate_instruction(
@@ -943,8 +943,8 @@ fn update_class_frozen_already_frozen() {
         .instruction(FreezeClassInstructionArgs { is_frozen: true });
 
     let mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     mollusk.process_and_validate_instruction(
@@ -984,8 +984,8 @@ fn create_record() {
     });
 
     let mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     mollusk.process_and_validate_instruction(
@@ -1035,8 +1035,8 @@ fn create_record_with_metadata() {
     });
 
     let mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     mollusk.process_and_validate_instruction(
@@ -1090,8 +1090,8 @@ fn create_record_with_metadata_and_additional_metadata() {
     });
 
     let mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     mollusk.process_and_validate_instruction(
@@ -1138,8 +1138,8 @@ fn create_permissioned_record() {
     });
 
     let mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     mollusk.process_and_validate_instruction(
@@ -1188,8 +1188,8 @@ fn update_record() {
     });
 
     let mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     mollusk.process_and_validate_instruction(
@@ -1260,8 +1260,8 @@ fn update_record_with_metadata() {
     });
 
     let mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     mollusk.process_and_validate_instruction(
@@ -1310,8 +1310,8 @@ fn update_record_with_delegate_incorrect_authority() {
     });
 
     let mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     mollusk.process_and_validate_instruction(
@@ -1353,8 +1353,8 @@ fn update_class_expiry() {
     });
 
     let mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     // Record updated
@@ -1401,8 +1401,8 @@ fn transfer_record() {
     });
 
     let mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     mollusk.process_and_validate_instruction(
@@ -1440,8 +1440,8 @@ fn transfer_record_with_delegate() {
     });
 
     let mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     mollusk.process_and_validate_instruction(
@@ -1481,8 +1481,8 @@ fn fail_transfer_record_frozen() {
     });
 
     let mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     mollusk.process_and_validate_instruction(
@@ -1515,8 +1515,8 @@ fn delete_record() {
     .instruction();
 
     let mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     mollusk.process_and_validate_instruction(
@@ -1556,8 +1556,8 @@ fn delete_record_with_delegate() {
     .instruction();
 
     let mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     mollusk.process_and_validate_instruction(
@@ -1584,7 +1584,7 @@ fn delete_tokenized_record_with_no_supply() {
     // Mint
     let (record, _bump) = Pubkey::find_program_address(
         &[b"record", &class.as_ref(), b"test"],
-        &SOLANA_RECORD_SERVICE_ID,
+        &TREZOA_RECORD_SERVICE_ID,
     );
     let (mint, mut mint_data) = keyed_account_for_mint(record);
     mint_data.data_as_mut_slice()[..MINT_DATA_WITH_EXTENSIONS_AND_NO_SUPPLY.len()].copy_from_slice(MINT_DATA_WITH_EXTENSIONS_AND_NO_SUPPLY);
@@ -1605,8 +1605,8 @@ fn delete_tokenized_record_with_no_supply() {
     .instruction();
 
     let mut mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     mollusk_svm_programs_token::token2022::add_program(&mut mollusk);
@@ -1648,8 +1648,8 @@ fn freeze_record() {
     .instruction(FreezeRecordInstructionArgs { is_frozen: true });
 
     let mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     mollusk.process_and_validate_instruction(
@@ -1685,8 +1685,8 @@ fn freeze_record_already_frozen() {
     .instruction(FreezeRecordInstructionArgs { is_frozen: true });
 
     let mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     mollusk.process_and_validate_instruction(
@@ -1745,8 +1745,8 @@ fn mint_record_token() {
     .instruction();
 
     let mut mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     mollusk_svm_programs_token::associated_token::add_program(&mut mollusk);
@@ -1815,8 +1815,8 @@ fn mint_record_token_with_additional_metadata() {
     .instruction();
 
     let mut mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     mollusk_svm_programs_token::associated_token::add_program(&mut mollusk);
@@ -1886,8 +1886,8 @@ fn mint_record_token_with_multiple_additional_metadata() {
     .instruction();
 
     let mut mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     mollusk_svm_programs_token::associated_token::add_program(&mut mollusk);
@@ -1957,8 +1957,8 @@ fn mint_record_token_with_delegate() {
     .instruction();
 
     let mut mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     mollusk_svm_programs_token::associated_token::add_program(&mut mollusk);
@@ -1998,7 +1998,7 @@ fn freeze_tokenized_record() {
     // Mint
     let (record_address, _) = Pubkey::find_program_address(
         &[b"record", &class.as_ref(), b"test"],
-        &SOLANA_RECORD_SERVICE_ID,
+        &TREZOA_RECORD_SERVICE_ID,
     );
     let (mint, mint_data) = keyed_account_for_mint(record_address);
     // Record
@@ -2022,8 +2022,8 @@ fn freeze_tokenized_record() {
     .instruction(FreezeTokenizedRecordInstructionArgs { is_frozen: true });
 
     let mut mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     mollusk_svm_programs_token::associated_token::add_program(&mut mollusk);
@@ -2057,7 +2057,7 @@ fn freeze_tokenized_record_delegate() {
     // Mint
     let (record_address, _) = Pubkey::find_program_address(
         &[b"record", &class.as_ref(), b"test"],
-        &SOLANA_RECORD_SERVICE_ID,
+        &TREZOA_RECORD_SERVICE_ID,
     );
     let (mint, mint_data) = keyed_account_for_mint(record_address);
     // Record
@@ -2081,8 +2081,8 @@ fn freeze_tokenized_record_delegate() {
     .instruction(FreezeTokenizedRecordInstructionArgs { is_frozen: true });
 
     let mut mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     mollusk_svm_programs_token::associated_token::add_program(&mut mollusk);
@@ -2116,7 +2116,7 @@ fn transfer_tokenized_record() {
     // Mint
     let (record_address, _) = Pubkey::find_program_address(
         &[b"record", &class.as_ref(), b"test"],
-        &SOLANA_RECORD_SERVICE_ID,
+        &TREZOA_RECORD_SERVICE_ID,
     );
     let (mint, mint_data) = keyed_account_for_mint(record_address);
     // Record
@@ -2142,8 +2142,8 @@ fn transfer_tokenized_record() {
     .instruction();
 
     let mut mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     mollusk_svm_programs_token::associated_token::add_program(&mut mollusk);
@@ -2172,7 +2172,7 @@ fn transfer_tokenized_record_delegate() {
     // Mint
     let (record_address, _) = Pubkey::find_program_address(
         &[b"record", &class.as_ref(), b"test"],
-        &SOLANA_RECORD_SERVICE_ID,
+        &TREZOA_RECORD_SERVICE_ID,
     );
     let (mint, mint_data) = keyed_account_for_mint(record_address);
     // Record
@@ -2198,8 +2198,8 @@ fn transfer_tokenized_record_delegate() {
     .instruction();
 
     let mut mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     mollusk_svm_programs_token::associated_token::add_program(&mut mollusk);
@@ -2231,7 +2231,7 @@ fn burn_tokenized_record() {
     // Mint
     let (record_address, _) = Pubkey::find_program_address(
         &[b"record", &class.as_ref(), b"test"],
-        &SOLANA_RECORD_SERVICE_ID,
+        &TREZOA_RECORD_SERVICE_ID,
     );
     let (mint, mint_data) = keyed_account_for_mint(record_address);
     // Record
@@ -2254,8 +2254,8 @@ fn burn_tokenized_record() {
     .instruction();
 
     let mut mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     mollusk_svm_programs_token::associated_token::add_program(&mut mollusk);
@@ -2286,7 +2286,7 @@ fn burn_tokenized_record_delegate() {
     // Mint
     let (record_address, _) = Pubkey::find_program_address(
         &[b"record", &class.as_ref(), b"test"],
-        &SOLANA_RECORD_SERVICE_ID,
+        &TREZOA_RECORD_SERVICE_ID,
     );
     let (mint, mint_data) = keyed_account_for_mint(record_address);
     // Record
@@ -2309,8 +2309,8 @@ fn burn_tokenized_record_delegate() {
     .instruction();
 
     let mut mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     mollusk_svm_programs_token::associated_token::add_program(&mut mollusk);
@@ -2378,8 +2378,8 @@ fn mint_and_burn_tokenized_record() {
     .instruction();
 
     let mut mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     mollusk_svm_programs_token::associated_token::add_program(&mut mollusk);
@@ -2456,8 +2456,8 @@ fn mint_and_burn_tokenized_record_delegate() {
     .instruction();
 
     let mut mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     mollusk_svm_programs_token::associated_token::add_program(&mut mollusk);
@@ -2495,7 +2495,7 @@ fn update_tokenized_record() {
     // Mint
     let (record_address, _) = Pubkey::find_program_address(
         &[b"record", &class.as_ref(), b"test"],
-        &SOLANA_RECORD_SERVICE_ID,
+        &TREZOA_RECORD_SERVICE_ID,
     );
     let (mint, mint_data) = keyed_account_for_mint(record_address);
     // Record
@@ -2582,8 +2582,8 @@ fn update_tokenized_record() {
     .instruction();
 
     let mut mollusk = Mollusk::new(
-        &SOLANA_RECORD_SERVICE_ID,
-        "../target/deploy/solana_record_service",
+        &TREZOA_RECORD_SERVICE_ID,
+        "../target/deploy/trezoa_record_service",
     );
 
     mollusk_svm_programs_token::associated_token::add_program(&mut mollusk);

@@ -1,7 +1,7 @@
 {
   "name": "srs-lib",
   "version": "1.0.0",
-  "repository": "git@github.com:solana-foundation/solana-record-service.git",
+  "repository": "git@github.com:trezoa-foundation/trezoa-record-service.git",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -22,8 +22,8 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "@metaplex-foundation/umi": "^1.2.0",
-    "@solana/kit": "^2.1.0",
+    "@trezoaplex-foundation/umi": "^1.2.0",
+    "@trezoa/kit": "^2.1.0",
     "bn.js": "^5.2.1",
     "borsh": "^2.0.0",
     "borsher": "^4.0.0"

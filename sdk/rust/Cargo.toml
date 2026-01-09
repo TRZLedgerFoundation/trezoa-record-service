@@ -1,20 +1,20 @@
 [package]
-name = "solana-record-service-client"
+name = "trezoa-record-service-client"
 version = "0.1.0"
 edition = "2021"
-description = "Rust client for the Solana Record Service"
+description = "Rust client for the Trezoa Record Service"
 license = "MIT"
-repository = "https://github.com/solana-foundation/solana-record-service"
+repository = "https://github.com/trzledgerfoundation/trezoa-record-service"
 
 [lib]
-name = "solana_record_service_client"
+name = "trezoa_record_service_client"
 
 [dependencies]
 kaigan = ">=0.2.6"
 borsh = "^0.10"
-solana-program = "2.3.0"
-solana-instruction = "2.3.0"
-solana-pubkey = "2.3.0"
-solana-account-info = "2.3.0"
-solana-program-entrypoint = "2.3.0"
-solana-cpi = "2.2.1"
+trezoa-program = "2.3.0"
+trezoa-instruction = "2.3.0"
+trezoa-pubkey = "2.3.0"
+trezoa-account-info = "2.3.0"
+trezoa-program-entrypoint = "2.3.0"
+trezoa-cpi = "2.2.1"
